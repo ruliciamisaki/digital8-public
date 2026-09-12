@@ -1,0 +1,18 @@
+# PC-8801 Digital 8 Converter V1
+
+ローカル完結のPC-8801デジタル8色変換器です。
+各スライダーの右側では数値を直接入力できます。R/G/B、彩度、明度、コントラストの調整は、入力プレビューへリアルタイムに反映されます。
+「入力を横幅640pxへ縮小」は、幅640pxを超える画像を縦横比を保って縮小してから変換します。変換対象の寸法は入力プレビューの下に表示されます。
+縮小処理はPillowのLANCZOSリサンプリングです（Pillow: MIT-CMU License）。
+
+初回だけ、同じフォルダで次を実行してください。
+
+```powershell
+python -m pip install -r requirements.txt
+```
+
+以後は `起動_GUI_V1.bat` をダブルクリックするか、次を実行します。
+
+```powershell
+python .\pc8801_gui_v1.py
+```
