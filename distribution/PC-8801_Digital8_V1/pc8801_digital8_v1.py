@@ -374,6 +374,33 @@ def resize_input(image: Image.Image, enabled: bool, target_width: int = 640) -> 
     )
 
 
+def load_source_with_alpha(source: Path) -> tuple[Image.Image, Image.Image | None]:
+    """Return RGB artwork and its original alpha channel, when one exists."""
+    image = Image.open(source)
+    has_alpha = "A" in image.getbands() or "transparency" in image.info
+    if not has_alpha:
+        return image.convert("RGB"), None
+    rgba = image.convert("RGBA")
+    return rgba.convert("RGB"), rgba.getchannel("A")
+
+
+def alpha_mask_image(alpha: Image.Image, invert: bool = False) -> Image.Image:
+    """Create an RGB grayscale mask: white is opaque, black is transparent."""
+    values = np.asarray(alpha, dtype=np.uint8)
+    if invert:
+        values = 255 - values
+    return Image.fromarray(np.repeat(values[:, :, None], 3, axis=2), mode="RGB")
+
+
+def preserve_alpha(result: Image.Image, alpha: Image.Image | None) -> Image.Image:
+    """Attach source alpha without changing the converter's palette RGB."""
+    if alpha is None:
+        return result
+    rgba = result.convert("RGBA")
+    rgba.putalpha(alpha)
+    return rgba
+
+
 def render(recipe_ids: np.ndarray, ink: np.ndarray, pattern_mode: str | bool = "normal-mix") -> np.ndarray:
     pattern_mode = normalise_pattern_mode(pattern_mode)
     h, w = recipe_ids.shape
@@ -419,10 +446,14 @@ def convert(
     blue_gain: float = 1.0,
     contrast: float = 1.0,
     resize_640: bool = False,
+    alpha_mask: Path | None = None,
+    invert_alpha_mask: bool = False,
 ) -> None:
     pattern_mode = normalise_pattern_mode(pattern_mode, gradient_mode)
-    original = Image.open(source).convert("RGB")
+    original, alpha = load_source_with_alpha(source)
     original = resize_input(original, resize_640)
+    if alpha is not None:
+        alpha = resize_input(alpha, resize_640)
     output_size = original.size
     if pc8801_200:
         # Work at half vertical resolution, but retain the source width and
@@ -430,6 +461,8 @@ def convert(
         # duplicates every logical scanline.
         logical_height = (original.height + 1) // 2
         original = original.resize((original.width, logical_height), Image.Resampling.LANCZOS)
+        if alpha is not None:
+            alpha = alpha.resize((alpha.width, logical_height), Image.Resampling.LANCZOS)
     if pixel_size > 1:
         grid = original.resize(
             (max(1, original.width // pixel_size), max(1, original.height // pixel_size)), Image.Resampling.LANCZOS
@@ -456,8 +489,16 @@ def convert(
         # final extra duplicate; all complete scanline pairs still match.
         if result.height != output_size[1]:
             result = result.crop((0, 0, output_size[0], output_size[1]))
+        if alpha is not None:
+            alpha = alpha.resize((output_size[0], logical_height * 2), Image.Resampling.NEAREST)
+            if alpha.height != output_size[1]:
+                alpha = alpha.crop((0, 0, output_size[0], output_size[1]))
     destination.parent.mkdir(parents=True, exist_ok=True)
-    result.save(destination, optimize=False)
+    preserve_alpha(result, alpha).save(destination, optimize=False)
+    if alpha_mask is not None:
+        alpha_mask.parent.mkdir(parents=True, exist_ok=True)
+        mask_alpha = alpha if alpha is not None else Image.new("L", result.size, 255)
+        alpha_mask_image(mask_alpha, invert_alpha_mask).save(alpha_mask)
 
 
 def main() -> None:
@@ -478,6 +519,8 @@ def main() -> None:
     parser.add_argument("--pc8801-200", action="store_true", help="convert at half input height, then duplicate each scanline to the original size")
     parser.add_argument("--pattern-mode", choices=PATTERN_MODES, default="normal-mix", help="normal-42, normal-44, normal-mix, or gradient")
     parser.add_argument("--gradient-mode", action="store_true", help="legacy alias for --pattern-mode gradient")
+    parser.add_argument("--alpha-mask", type=Path, help="optional RGB grayscale alpha mask; white=opaque, black=transparent")
+    parser.add_argument("--invert-alpha-mask", action="store_true", help="invert the optional alpha mask")
     args = parser.parse_args()
     colour_controls = (args.red, args.green, args.blue, args.contrast)
     if args.pixel_size < 1 or not 0 <= args.line_threshold <= 255 or not 0.5 <= args.brightness <= 1.5 or not 0 <= args.saturation <= 2 or not all(0.5 <= value <= 1.5 for value in colour_controls) or not 0 <= args.yellow_bias <= 1 or not 0 <= args.edge_ink <= 1:
@@ -487,6 +530,7 @@ def main() -> None:
         args.brightness, args.saturation, args.yellow_bias, args.edge_ink,
         args.pc8801_200, args.pattern_mode, args.gradient_mode,
         args.red, args.green, args.blue, args.contrast, args.resize_640,
+        args.alpha_mask, args.invert_alpha_mask,
     )
 
 

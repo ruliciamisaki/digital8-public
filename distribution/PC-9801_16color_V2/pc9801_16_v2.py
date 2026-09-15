@@ -63,11 +63,15 @@ def convert(
     blue_gain: float = 1.0,
     contrast: float = 1.0,
     resize_640: bool = False,
+    alpha_mask: Path | None = None,
+    invert_alpha_mask: bool = False,
 ) -> None:
     data = load_reference(reference)
     palette = legacy.palette_by_id(data, palette_id)
-    original = Image.open(source).convert("RGB")
+    original, alpha = legacy.load_source_with_alpha(source)
     original = legacy.resize_input(original, resize_640)
+    if alpha is not None:
+        alpha = legacy.resize_input(alpha, resize_640)
     if pixel_size > 1:
         grid = original.resize((max(1, original.width // pixel_size), max(1, original.height // pixel_size)), Image.Resampling.LANCZOS)
     else:
@@ -97,7 +101,11 @@ def convert(
     if pixel_size > 1:
         result = result.resize(original.size, Image.Resampling.NEAREST)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    result.save(destination, optimize=False)
+    legacy.preserve_alpha(result, alpha).save(destination, optimize=False)
+    if alpha_mask is not None:
+        alpha_mask.parent.mkdir(parents=True, exist_ok=True)
+        mask_alpha = alpha if alpha is not None else Image.new("L", result.size, 255)
+        legacy.alpha_mask_image(mask_alpha, invert_alpha_mask).save(alpha_mask)
 
 
 def main() -> None:
@@ -120,13 +128,15 @@ def main() -> None:
     parser.add_argument("--pattern-mode", choices=PATTERN_MODES, default="reference")
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--colour-coherence", type=int, default=10, help="RGB bucket step; 1 disables grouping")
+    parser.add_argument("--alpha-mask", type=Path, help="optional RGB grayscale alpha mask; white=opaque, black=transparent")
+    parser.add_argument("--invert-alpha-mask", action="store_true", help="invert the optional alpha mask")
     args = parser.parse_args()
     if args.pixel_size < 1 or not 0 <= args.fill_stability <= 1 or not 1 <= args.colour_coherence <= 32:
         parser.error("pixel size >= 1; fill stability 0..1; colour coherence 1..32")
     convert(args.input, args.output, args.palette, args.pixel_size, args.line_threshold, args.brightness,
             args.saturation, args.yellow_bias, args.edge_ink, args.fill_stability, args.pattern_mode,
             args.reference, args.colour_coherence, args.red, args.green, args.blue, args.contrast,
-            args.resize_640)
+            args.resize_640, args.alpha_mask, args.invert_alpha_mask)
 
 
 if __name__ == "__main__":

@@ -98,6 +98,33 @@ def resize_input(image: Image.Image, enabled: bool, target_width: int = 640) -> 
     )
 
 
+def load_source_with_alpha(source: Path) -> tuple[Image.Image, Image.Image | None]:
+    """Return RGB artwork and its original alpha channel, when one exists."""
+    image = Image.open(source)
+    has_alpha = "A" in image.getbands() or "transparency" in image.info
+    if not has_alpha:
+        return image.convert("RGB"), None
+    rgba = image.convert("RGBA")
+    return rgba.convert("RGB"), rgba.getchannel("A")
+
+
+def alpha_mask_image(alpha: Image.Image, invert: bool = False) -> Image.Image:
+    """Create an RGB grayscale mask: white is opaque, black is transparent."""
+    values = np.asarray(alpha, dtype=np.uint8)
+    if invert:
+        values = 255 - values
+    return Image.fromarray(np.repeat(values[:, :, None], 3, axis=2), mode="RGB")
+
+
+def preserve_alpha(result: Image.Image, alpha: Image.Image | None) -> Image.Image:
+    """Attach source alpha without changing the converter's palette RGB."""
+    if alpha is None:
+        return result
+    rgba = result.convert("RGBA")
+    rgba.putalpha(alpha)
+    return rgba
+
+
 def line_mask(image: np.ndarray, threshold: int, edge_strength: float = 0.0) -> np.ndarray:
     """Extract near-black ink and optional dark contrast contours."""
     value = image.max(axis=2)
@@ -206,11 +233,15 @@ def convert(
     blue_gain: float = 1.0,
     contrast: float = 1.0,
     resize_640: bool = False,
+    alpha_mask: Path | None = None,
+    invert_alpha_mask: bool = False,
 ) -> None:
     data = load_reference(reference)
     palette = palette_by_id(data, palette_id)
-    original = Image.open(source).convert("RGB")
+    original, alpha = load_source_with_alpha(source)
     original = resize_input(original, resize_640)
+    if alpha is not None:
+        alpha = resize_input(alpha, resize_640)
     if pixel_size > 1:
         grid = original.resize((max(1, original.width // pixel_size), max(1, original.height // pixel_size)), Image.Resampling.LANCZOS)
     else:
@@ -241,7 +272,11 @@ def convert(
     if pixel_size > 1:
         result = result.resize(original.size, Image.Resampling.NEAREST)
     destination.parent.mkdir(parents=True, exist_ok=True)
-    result.save(destination, optimize=False)
+    preserve_alpha(result, alpha).save(destination, optimize=False)
+    if alpha_mask is not None:
+        alpha_mask.parent.mkdir(parents=True, exist_ok=True)
+        mask_alpha = alpha if alpha is not None else Image.new("L", result.size, 255)
+        alpha_mask_image(mask_alpha, invert_alpha_mask).save(alpha_mask)
 
 
 def main() -> None:
@@ -263,6 +298,8 @@ def main() -> None:
     parser.add_argument("--fill-stability", type=float, default=0.0, help="merge isolated fill recipes inside similar-colour regions, 0..1")
     parser.add_argument("--pattern-mode", choices=PATTERN_MODES, default="reference")
     parser.add_argument("--reference", type=Path)
+    parser.add_argument("--alpha-mask", type=Path, help="optional RGB grayscale alpha mask; white=opaque, black=transparent")
+    parser.add_argument("--invert-alpha-mask", action="store_true", help="invert the optional alpha mask")
     args = parser.parse_args()
     colour_controls = (args.red, args.green, args.blue, args.brightness, args.contrast)
     if args.pixel_size < 1 or not 0 <= args.fill_stability <= 1 or not all(0.5 <= value <= 1.5 for value in colour_controls) or not 0 <= args.saturation <= 2:
@@ -272,6 +309,7 @@ def main() -> None:
         args.brightness, args.saturation, args.yellow_bias, args.edge_ink,
         args.fill_stability, args.pattern_mode, args.reference,
         args.red, args.green, args.blue, args.contrast, args.resize_640,
+        args.alpha_mask, args.invert_alpha_mask,
     )
 
 

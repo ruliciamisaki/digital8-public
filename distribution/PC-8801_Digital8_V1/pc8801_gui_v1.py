@@ -51,6 +51,8 @@ class App(ttk.Frame):
         self.edge_ink = tk.DoubleVar(value=0.00)
         self.resize_640 = tk.BooleanVar(value=False)
         self.pc8801_200 = tk.BooleanVar(value=False)
+        self.export_alpha_mask = tk.BooleanVar(value=True)
+        self.invert_alpha_mask = tk.BooleanVar(value=False)
         self.pattern_mode = tk.StringVar(value="通常Mix（4×2＋4×4）")
         self.status = tk.StringVar(value="画像を選んでね。")
         self.source_size = tk.StringVar(value="変換対象: 未選択")
@@ -98,10 +100,12 @@ class App(ttk.Frame):
         self.add_scale(controls, 8, "コントラスト", self.contrast, 0.50, 1.50, preview=True)
         self.add_scale(controls, 9, "輪郭抽出", self.edge_ink, 0.00, 1.00)
         ttk.Checkbutton(controls, text="PC-8801 200ライン出力（入力高を1/2で変換し、各ラインを縦2倍）", variable=self.pc8801_200).grid(row=10, column=0, columnspan=4, sticky="w", pady=(8, 0))
-        ttk.Label(controls, text="パターン方式").grid(row=11, column=0, sticky="w", pady=(6, 0))
+        ttk.Checkbutton(controls, text="透明マスクも書き出す（白＝不透明／黒＝透明）", variable=self.export_alpha_mask).grid(row=11, column=0, columnspan=3, sticky="w", pady=(6, 0))
+        ttk.Checkbutton(controls, text="マスクを白黒反転", variable=self.invert_alpha_mask).grid(row=11, column=3, sticky="w", pady=(6, 0))
+        ttk.Label(controls, text="パターン方式").grid(row=12, column=0, sticky="w", pady=(6, 0))
         mode_picker = ttk.Combobox(controls, textvariable=self.pattern_mode, values=tuple(PATTERN_MODE_LABELS), state="readonly", width=24)
-        mode_picker.grid(row=11, column=1, columnspan=2, sticky="w", padx=(5, 0), pady=(6, 0))
-        ttk.Label(controls, text="4×4は全色を16段階で混色。Mixは4×2を優先。").grid(row=12, column=1, columnspan=3, sticky="w", padx=(5, 0), pady=(2, 0))
+        mode_picker.grid(row=12, column=1, columnspan=2, sticky="w", padx=(5, 0), pady=(6, 0))
+        ttk.Label(controls, text="4×4は全色を16段階で混色。Mixは4×2を優先。").grid(row=13, column=1, columnspan=3, sticky="w", padx=(5, 0), pady=(2, 0))
 
         self.convert_button = ttk.Button(self, text="PC-8801 デジタル8色へ変換", command=self.start_convert)
         self.convert_button.grid(row=3, column=0, columnspan=3, sticky="ew", pady=(0, 8))
@@ -276,6 +280,8 @@ class App(ttk.Frame):
             "blue_gain": self.blue_gain.get(),
             "contrast": self.contrast.get(),
             "resize_640": self.resize_640.get(),
+            "alpha_mask": destination.with_name(f"{destination.stem}_alpha_mask.png") if self.export_alpha_mask.get() else None,
+            "invert_alpha_mask": self.invert_alpha_mask.get(),
         }
         threading.Thread(target=self._convert_worker, args=(source, destination, settings), daemon=True).start()
 
