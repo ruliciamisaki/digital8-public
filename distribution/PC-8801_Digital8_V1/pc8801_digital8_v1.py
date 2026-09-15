@@ -59,6 +59,7 @@ SCATTER_44 = np.array(((5, 0, 13, 8), (12, 9, 4, 1), (3, 6, 15, 10), (14, 11, 2,
 TILES_44 = (SPARSE_44, DIAGONAL_44, SCATTER_44)
 
 PATTERN_MODES = ("normal-42", "normal-44", "normal-mix", "gradient")
+ALPHA_MODES = ("preserve", "binary")
 
 
 @dataclass(frozen=True)
@@ -401,6 +402,32 @@ def preserve_alpha(result: Image.Image, alpha: Image.Image | None) -> Image.Imag
     return rgba
 
 
+def prepare_output_alpha(
+    alpha: Image.Image | None,
+    mode: str,
+    threshold: int,
+    pc8801_200: bool,
+    output_size: tuple[int, int],
+) -> Image.Image | None:
+    """Preserve alpha, or make a binary mask at the PC-8801 logical height."""
+    if alpha is None:
+        return None
+    if mode == "preserve":
+        return alpha
+    if mode != "binary":
+        raise ValueError(f"unknown alpha mode: {mode}")
+    if pc8801_200:
+        logical_height = (output_size[1] + 1) // 2
+        alpha = alpha.resize((output_size[0], logical_height), Image.Resampling.LANCZOS)
+    values = np.where(np.asarray(alpha, dtype=np.uint8) >= threshold, 255, 0).astype(np.uint8)
+    converted = Image.fromarray(values, mode="L")
+    if pc8801_200:
+        converted = converted.resize((output_size[0], converted.height * 2), Image.Resampling.NEAREST)
+        if converted.height != output_size[1]:
+            converted = converted.crop((0, 0, output_size[0], output_size[1]))
+    return converted
+
+
 def render(recipe_ids: np.ndarray, ink: np.ndarray, pattern_mode: str | bool = "normal-mix") -> np.ndarray:
     pattern_mode = normalise_pattern_mode(pattern_mode)
     h, w = recipe_ids.shape
@@ -448,6 +475,8 @@ def convert(
     resize_640: bool = False,
     alpha_mask: Path | None = None,
     invert_alpha_mask: bool = False,
+    alpha_mode: str = "preserve",
+    alpha_threshold: int = 128,
 ) -> None:
     pattern_mode = normalise_pattern_mode(pattern_mode, gradient_mode)
     original, alpha = load_source_with_alpha(source)
@@ -461,8 +490,6 @@ def convert(
         # duplicates every logical scanline.
         logical_height = (original.height + 1) // 2
         original = original.resize((original.width, logical_height), Image.Resampling.LANCZOS)
-        if alpha is not None:
-            alpha = alpha.resize((alpha.width, logical_height), Image.Resampling.LANCZOS)
     if pixel_size > 1:
         grid = original.resize(
             (max(1, original.width // pixel_size), max(1, original.height // pixel_size)), Image.Resampling.LANCZOS
@@ -489,10 +516,7 @@ def convert(
         # final extra duplicate; all complete scanline pairs still match.
         if result.height != output_size[1]:
             result = result.crop((0, 0, output_size[0], output_size[1]))
-        if alpha is not None:
-            alpha = alpha.resize((output_size[0], logical_height * 2), Image.Resampling.NEAREST)
-            if alpha.height != output_size[1]:
-                alpha = alpha.crop((0, 0, output_size[0], output_size[1]))
+    alpha = prepare_output_alpha(alpha, alpha_mode, alpha_threshold, pc8801_200, output_size)
     destination.parent.mkdir(parents=True, exist_ok=True)
     preserve_alpha(result, alpha).save(destination, optimize=False)
     if alpha_mask is not None:
@@ -521,16 +545,19 @@ def main() -> None:
     parser.add_argument("--gradient-mode", action="store_true", help="legacy alias for --pattern-mode gradient")
     parser.add_argument("--alpha-mask", type=Path, help="optional RGB grayscale alpha mask; white=opaque, black=transparent")
     parser.add_argument("--invert-alpha-mask", action="store_true", help="invert the optional alpha mask")
+    parser.add_argument("--alpha-mode", choices=ALPHA_MODES, default="preserve", help="preserve source alpha or convert it to binary transparency")
+    parser.add_argument("--alpha-threshold", type=int, default=128, help="binary alpha threshold, 0..255")
     args = parser.parse_args()
     colour_controls = (args.red, args.green, args.blue, args.contrast)
-    if args.pixel_size < 1 or not 0 <= args.line_threshold <= 255 or not 0.5 <= args.brightness <= 1.5 or not 0 <= args.saturation <= 2 or not all(0.5 <= value <= 1.5 for value in colour_controls) or not 0 <= args.yellow_bias <= 1 or not 0 <= args.edge_ink <= 1:
-        parser.error("pixel size >= 1; line threshold 0..255; RGB/brightness/contrast 0.5..1.5; saturation 0..2; yellow bias 0..1; edge ink 0..1")
+    if args.pixel_size < 1 or not 0 <= args.line_threshold <= 255 or not 0 <= args.alpha_threshold <= 255 or not 0.5 <= args.brightness <= 1.5 or not 0 <= args.saturation <= 2 or not all(0.5 <= value <= 1.5 for value in colour_controls) or not 0 <= args.yellow_bias <= 1 or not 0 <= args.edge_ink <= 1:
+        parser.error("pixel size >= 1; line/alpha threshold 0..255; RGB/brightness/contrast 0.5..1.5; saturation 0..2; yellow bias 0..1; edge ink 0..1")
     convert(
         args.input, args.output, args.pixel_size, args.line_threshold,
         args.brightness, args.saturation, args.yellow_bias, args.edge_ink,
         args.pc8801_200, args.pattern_mode, args.gradient_mode,
         args.red, args.green, args.blue, args.contrast, args.resize_640,
         args.alpha_mask, args.invert_alpha_mask,
+        args.alpha_mode, args.alpha_threshold,
     )
 
 

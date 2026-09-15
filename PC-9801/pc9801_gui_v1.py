@@ -24,6 +24,10 @@ PATTERN_LABELS = {
     "頻出Mix（資料由来・1/16刻み）": "reference",
     "グラデーション（分散型・1/16刻み）": "gradient",
 }
+ALPHA_MODE_LABELS = {
+    "そのまま保持（階調あり）": "preserve",
+    "二値化（透明／不透明）": "binary",
+}
 PALETTE_DESCRIPTIONS = {
     "palette_01": "DokiDokiバケーション-MAP",
     "palette_02": "DokiDokiバケーション-AYAKA",
@@ -54,6 +58,8 @@ class App(ttk.Frame):
         self.brightness, self.saturation = tk.DoubleVar(value=1.0), tk.DoubleVar(value=1.0)
         self.contrast, self.edge_ink = tk.DoubleVar(value=1.0), tk.DoubleVar(value=0.0)
         self.resize_640 = tk.BooleanVar(value=False)
+        self.alpha_mode = tk.StringVar(value="そのまま保持（階調あり）")
+        self.alpha_threshold = tk.IntVar(value=128)
         self.export_alpha_mask = tk.BooleanVar(value=True)
         self.invert_alpha_mask = tk.BooleanVar(value=False)
         self.fill_stability = tk.DoubleVar(value=0.20)
@@ -112,8 +118,11 @@ class App(ttk.Frame):
         self.add_scale(controls, 12, "塗り判定の安定化", self.fill_stability, 0.0, 1.0)
         ttk.Label(controls, text="パターン方式").grid(row=13, column=0, sticky="w", pady=(7, 0))
         ttk.Combobox(controls, textvariable=self.pattern_mode, values=tuple(PATTERN_LABELS), state="readonly", width=34).grid(row=13, column=1, columnspan=2, sticky="w", padx=6, pady=(7, 0))
-        ttk.Checkbutton(controls, text="透明マスクも書き出す（白＝不透明／黒＝透明）", variable=self.export_alpha_mask).grid(row=14, column=0, columnspan=3, sticky="w", pady=(7, 0))
-        ttk.Checkbutton(controls, text="マスクを白黒反転", variable=self.invert_alpha_mask).grid(row=14, column=3, sticky="w", pady=(7, 0))
+        ttk.Label(controls, text="アルファ処理").grid(row=14, column=0, sticky="w", pady=(7, 0))
+        ttk.Combobox(controls, textvariable=self.alpha_mode, values=tuple(ALPHA_MODE_LABELS), state="readonly", width=27).grid(row=14, column=1, columnspan=2, sticky="w", padx=6, pady=(7, 0))
+        self.add_scale(controls, 15, "アルファしきい値（二値化時）", self.alpha_threshold, 0, 255)
+        ttk.Checkbutton(controls, text="透明マスクも書き出す（白＝不透明／黒＝透明）", variable=self.export_alpha_mask).grid(row=16, column=0, columnspan=3, sticky="w", pady=(7, 0))
+        ttk.Checkbutton(controls, text="マスクを白黒反転", variable=self.invert_alpha_mask).grid(row=16, column=3, sticky="w", pady=(7, 0))
         self.convert_button = ttk.Button(self, text="PC-9801風16色へ変換", command=self.start)
         self.convert_button.grid(row=3, column=0, columnspan=3, sticky="ew")
         previews = ttk.Frame(self); previews.grid(row=4, column=0, columnspan=3, sticky="nsew", pady=8)
@@ -268,6 +277,8 @@ class App(ttk.Frame):
             "resize_640": self.resize_640.get(),
             "alpha_mask": destination.with_name(f"{destination.stem}_alpha_mask.png") if self.export_alpha_mask.get() else None,
             "invert_alpha_mask": self.invert_alpha_mask.get(),
+            "alpha_mode": ALPHA_MODE_LABELS[self.alpha_mode.get()],
+            "alpha_threshold": self.alpha_threshold.get(),
         }
         self.convert_button.configure(state="disabled"); self.status.set("変換中…")
         threading.Thread(target=self.worker, args=(source, destination, settings), daemon=True).start()
@@ -285,4 +296,4 @@ class App(ttk.Frame):
 
 if __name__ == "__main__":
     root = TkinterDnD.Tk() if HAS_FILE_DROP else tk.Tk()
-    root.title("PC-9801 4096色中16色 Converter V1"); root.minsize(900, 850); App(root); root.mainloop()
+    root.title("PC-9801 4096色中16色 Converter V1"); root.minsize(900, 920); App(root); root.mainloop()

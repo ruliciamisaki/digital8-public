@@ -21,7 +21,7 @@ class App(legacy_gui.App):
 def main() -> None:
     root = legacy_gui.TkinterDnD.Tk() if legacy_gui.HAS_FILE_DROP else tk.Tk()
     root.title("PC-8801 Digital 8 Converter V2 (Balanced Reference)")
-    root.minsize(780, 810)
+    root.minsize(780, 880)
     App(root)
     root.mainloop()
 

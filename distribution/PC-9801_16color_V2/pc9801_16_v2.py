@@ -65,6 +65,8 @@ def convert(
     resize_640: bool = False,
     alpha_mask: Path | None = None,
     invert_alpha_mask: bool = False,
+    alpha_mode: str = "preserve",
+    alpha_threshold: int = 128,
 ) -> None:
     data = load_reference(reference)
     palette = legacy.palette_by_id(data, palette_id)
@@ -100,6 +102,7 @@ def convert(
     result.putpalette(palette.flatten().tolist() + [0] * (768 - len(palette) * 3))
     if pixel_size > 1:
         result = result.resize(original.size, Image.Resampling.NEAREST)
+    alpha = legacy.prepare_output_alpha(alpha, alpha_mode, alpha_threshold)
     destination.parent.mkdir(parents=True, exist_ok=True)
     legacy.preserve_alpha(result, alpha).save(destination, optimize=False)
     if alpha_mask is not None:
@@ -130,13 +133,16 @@ def main() -> None:
     parser.add_argument("--colour-coherence", type=int, default=10, help="RGB bucket step; 1 disables grouping")
     parser.add_argument("--alpha-mask", type=Path, help="optional RGB grayscale alpha mask; white=opaque, black=transparent")
     parser.add_argument("--invert-alpha-mask", action="store_true", help="invert the optional alpha mask")
+    parser.add_argument("--alpha-mode", choices=legacy.ALPHA_MODES, default="preserve", help="preserve source alpha or convert it to binary transparency")
+    parser.add_argument("--alpha-threshold", type=int, default=128, help="binary alpha threshold, 0..255")
     args = parser.parse_args()
-    if args.pixel_size < 1 or not 0 <= args.fill_stability <= 1 or not 1 <= args.colour_coherence <= 32:
-        parser.error("pixel size >= 1; fill stability 0..1; colour coherence 1..32")
+    if args.pixel_size < 1 or not 0 <= args.fill_stability <= 1 or not 1 <= args.colour_coherence <= 32 or not 0 <= args.alpha_threshold <= 255:
+        parser.error("pixel size >= 1; fill stability 0..1; colour coherence 1..32; alpha threshold 0..255")
     convert(args.input, args.output, args.palette, args.pixel_size, args.line_threshold, args.brightness,
             args.saturation, args.yellow_bias, args.edge_ink, args.fill_stability, args.pattern_mode,
             args.reference, args.colour_coherence, args.red, args.green, args.blue, args.contrast,
-            args.resize_640, args.alpha_mask, args.invert_alpha_mask)
+            args.resize_640, args.alpha_mask, args.invert_alpha_mask,
+            args.alpha_mode, args.alpha_threshold)
 
 
 if __name__ == "__main__":

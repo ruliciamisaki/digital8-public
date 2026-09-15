@@ -22,7 +22,7 @@ class App(legacy_gui.App):
 def main() -> None:
     root = legacy_gui.TkinterDnD.Tk() if legacy_gui.HAS_FILE_DROP else tk.Tk()
     root.title("PC-9801 16-colour Converter V2 (Balanced Reference)")
-    root.minsize(900, 850)
+    root.minsize(900, 920)
     App(root)
     root.mainloop()
 

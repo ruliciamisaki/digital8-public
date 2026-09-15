@@ -10,6 +10,7 @@ import numpy as np
 from PIL import Image, ImageFilter
 
 PATTERN_MODES = ("cell", "reference", "gradient")
+ALPHA_MODES = ("preserve", "binary")
 
 
 def reference_path() -> Path:
@@ -125,6 +126,22 @@ def preserve_alpha(result: Image.Image, alpha: Image.Image | None) -> Image.Imag
     return rgba
 
 
+def prepare_output_alpha(
+    alpha: Image.Image | None,
+    mode: str,
+    threshold: int,
+) -> Image.Image | None:
+    """Preserve source alpha or reduce it to transparent/opaque values."""
+    if alpha is None:
+        return None
+    if mode == "preserve":
+        return alpha
+    if mode != "binary":
+        raise ValueError(f"unknown alpha mode: {mode}")
+    values = np.where(np.asarray(alpha, dtype=np.uint8) >= threshold, 255, 0).astype(np.uint8)
+    return Image.fromarray(values, mode="L")
+
+
 def line_mask(image: np.ndarray, threshold: int, edge_strength: float = 0.0) -> np.ndarray:
     """Extract near-black ink and optional dark contrast contours."""
     value = image.max(axis=2)
@@ -235,6 +252,8 @@ def convert(
     resize_640: bool = False,
     alpha_mask: Path | None = None,
     invert_alpha_mask: bool = False,
+    alpha_mode: str = "preserve",
+    alpha_threshold: int = 128,
 ) -> None:
     data = load_reference(reference)
     palette = palette_by_id(data, palette_id)
@@ -271,6 +290,7 @@ def convert(
     result.putpalette(flat)
     if pixel_size > 1:
         result = result.resize(original.size, Image.Resampling.NEAREST)
+    alpha = prepare_output_alpha(alpha, alpha_mode, alpha_threshold)
     destination.parent.mkdir(parents=True, exist_ok=True)
     preserve_alpha(result, alpha).save(destination, optimize=False)
     if alpha_mask is not None:
@@ -300,16 +320,19 @@ def main() -> None:
     parser.add_argument("--reference", type=Path)
     parser.add_argument("--alpha-mask", type=Path, help="optional RGB grayscale alpha mask; white=opaque, black=transparent")
     parser.add_argument("--invert-alpha-mask", action="store_true", help="invert the optional alpha mask")
+    parser.add_argument("--alpha-mode", choices=ALPHA_MODES, default="preserve", help="preserve source alpha or convert it to binary transparency")
+    parser.add_argument("--alpha-threshold", type=int, default=128, help="binary alpha threshold, 0..255")
     args = parser.parse_args()
     colour_controls = (args.red, args.green, args.blue, args.brightness, args.contrast)
-    if args.pixel_size < 1 or not 0 <= args.fill_stability <= 1 or not all(0.5 <= value <= 1.5 for value in colour_controls) or not 0 <= args.saturation <= 2:
-        parser.error("pixel size >= 1; fill stability 0..1; RGB/brightness/contrast 0.5..1.5; saturation 0..2")
+    if args.pixel_size < 1 or not 0 <= args.fill_stability <= 1 or not 0 <= args.alpha_threshold <= 255 or not all(0.5 <= value <= 1.5 for value in colour_controls) or not 0 <= args.saturation <= 2:
+        parser.error("pixel size >= 1; fill stability 0..1; alpha threshold 0..255; RGB/brightness/contrast 0.5..1.5; saturation 0..2")
     convert(
         args.input, args.output, args.palette, args.pixel_size, args.line_threshold,
         args.brightness, args.saturation, args.yellow_bias, args.edge_ink,
         args.fill_stability, args.pattern_mode, args.reference,
         args.red, args.green, args.blue, args.contrast, args.resize_640,
         args.alpha_mask, args.invert_alpha_mask,
+        args.alpha_mode, args.alpha_threshold,
     )
 
 
