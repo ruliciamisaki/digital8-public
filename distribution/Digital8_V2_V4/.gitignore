@@ -1,0 +1,5 @@
+# The repository ignores generated PNGs globally. Track only the curated examples.
+!output_sample/*.png
+!output_sample/変換元/*.png
+!output_sample/PC88/*.png
+!output_sample/PC98/*.png

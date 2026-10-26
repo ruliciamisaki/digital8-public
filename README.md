@@ -1,24 +1,33 @@
-# Digital 8 / PC-9801 converters
+# Digital8 — レトロPC風画像変換器
 
-ローカル完結のレトロPC風画像変換器です。
+ローカル完結のレトロPC風画像変換器です。PC-8801mk2風、PC-9801VM21以降風の画像に変換します。
 
-この公開版には、実行に必要なソース、固定パレットJSON、配布フォルダ、文書、展示用に選んだ変換例を収録しています。
-開発時の解析用サンプルや資料由来の参照PNGは含めません。
+## 現行版：PC-8801 / PC-9801 統合版
 
-- `PC-8801/`: PC-8801デジタル8色版のソースと解析ツール、[使い方](PC-8801/使い方.md)、[技術解説](PC-8801/技術解説.md)
-- `PC-9801/`: PC-9801・4096色中16色版のソース、固定パレット、解析ツール、[使い方](PC-9801/使い方.md)、[技術解説](PC-9801/技術解説.md)
-- `distribution/`: 配布用。実行に必要なファイルだけを含みます。
+V2「頻出パターン式」とV4「2色パターン式」を選べる統合版を開発・更新しています。機種別の旧版は開発終了とし、比較用の履歴として残しています。
 
-V1は従来版、V2は追加サンプルを画像単位で重み付けして解析した改良版です。通常はV2をおすすめしますが、V1も比較用に残しています。
+- [統合版を起動する](distribution/Digital8_V2_V4/README.md) — `distribution/Digital8_V2_V4/`で依存ライブラリを入れ、`起動_GUI.bat`を実行
+- [使い方と画面写真](distribution/Digital8_V2_V4/使い方.md)
+- [入力・PC-8801・PC-9801の変換例](distribution/Digital8_V2_V4/サンプル.md)
 
-- `distribution/PC-8801_Digital8_V1/`
-- `distribution/PC-8801_Digital8_V2/`
-- `distribution/PC-9801_16color_V1/`
-- `distribution/PC-9801_16color_V2/`
+| 入力画像 | 統合版・PC-8801出力例 | 統合版・PC-9801出力例 |
+| --- | --- | --- |
+| <img src="distribution/Digital8_V2_V4/output_sample/変換元/PC88-98_0000_00005-3273937094.png" alt="入力画像" width="250"> | <img src="distribution/Digital8_V2_V4/output_sample/PC88/PC88-98_0000_00005-3273937094_digital8.png" alt="PC-8801出力例" width="250"> | <img src="distribution/Digital8_V2_V4/output_sample/PC98/PC88-98_0000_00005-3273937094_pc98.png" alt="PC-9801出力例" width="250"> |
+
+この公開版には、実行に必要なソース・固定パレット・文書と、展示用の変換例を収録しています。開発時の解析資料や資料由来の参照PNGは含めません。
+
+## 旧版（開発終了）
+
+以前の機種別V1・V2と解析資料を残しています。以下は旧版の説明と変換例です。
+
+- `PC-8801/`: [旧版の使い方](PC-8801/使い方.md)、[技術解説](PC-8801/技術解説.md)
+- `PC-9801/`: [旧版の使い方](PC-9801/使い方.md)、[技術解説](PC-9801/技術解説.md)
+- `distribution/PC-8801_Digital8_V1/`、`distribution/PC-8801_Digital8_V2/`
+- `distribution/PC-9801_16color_V1/`、`distribution/PC-9801_16color_V2/`
 
 V2の設計とV1との差は `EXPERIMENT_V2.md` を参照してください。
 
-## V2の変換例
+## 旧版V2の変換例
 
 各行は左が入力画像、右がV2での変換結果です。PC-9801版の番号は変換時に選んだ固定パレットを示します。結果は入力画像や設定によって変わります。
 
