@@ -6,6 +6,7 @@
 
 V2「頻出パターン式」とV4「2色パターン式」を選べる統合版を開発・更新しています。機種別の旧版は開発終了とし、比較用の履歴として残しています。
 
+- **[ブラウザで使う](https://ruliciamisaki.github.io/digital8-public/)** — インストール不要。画像はブラウザ内で変換し、サーバーへ送信しません。使い方は[ブラウザ版の説明](web/README.md)を参照してください。
 - [統合版を起動する](distribution/Digital8_V2_V4/README.md) — `distribution/Digital8_V2_V4/`で依存ライブラリを入れ、`起動_GUI.bat`を実行
 - [使い方と画面写真](distribution/Digital8_V2_V4/使い方.md)
 - [入力・PC-8801・PC-9801の変換例](distribution/Digital8_V2_V4/サンプル.md)
