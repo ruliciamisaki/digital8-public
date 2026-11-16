@@ -1,0 +1,44 @@
+html, body { height: 100%; width: 100%; margin: 0; overflow: hidden; }
+body { color: var(--uxp-host-text-color); background-color: var(--uxp-host-background-color); font-size: 12px; }
+#app { position: absolute; top: 12px; bottom: 12px; left: 12px; right: 12px; display: flex; flex-direction: column; overflow: hidden; }
+#content { flex: 1; min-height: 0; overflow-y: auto; padding-right: 5px; }
+#footer { flex-shrink: 0; padding-top: 4px; }
+.heading { display: flex; align-items: center; justify-content: space-between; margin-bottom: 6px; }
+.select-row { display: flex; align-items: center; margin-top: 8px; }
+.select-row sp-label { width: 58px; flex-shrink: 0; }
+sp-dropdown { flex: 1; min-width: 0; }
+#palette { flex: 1; min-width: 0; }
+#palette-options { flex-direction: column; max-height: 232px; overflow-y: auto; margin: 4px 0 0 58px; }
+#palette-options sp-action-button { flex-shrink: 0; margin-bottom: 2px; }
+#target { opacity: .8; }
+#read-existing { margin-top: 5px; align-self: flex-start; }
+#swatches { display: flex; flex-wrap: wrap; margin-top: 10px; max-height: 160px; overflow-y: auto; padding: 2px; background-color: rgba(0,0,0,.18); }
+.swatch { width: 18px; height: 18px; border: 1px solid rgba(0,0,0,.4); margin: 1px; padding: 0; flex-shrink: 0; border-radius: 0; }
+.swatch.selected { border: 2px solid white; }
+.colour-row { display: flex; align-items: center; margin-top: 7px; }
+#selected-chip { width: 22px; height: 22px; border: 1px solid #888; margin-right: 8px; }
+#hex { width: 112px; margin-right: 8px; }
+#toggle-rgb { margin-top: 5px; align-self: flex-start; }
+#rgb-editor { padding-top: 8px; }
+#tabs { display: flex; flex-wrap: wrap; margin-top: 12px; margin-bottom: 6px; }
+#tabs sp-action-button { margin-right: 3px; margin-bottom: 4px; padding: 0 7px; }
+#tabs .selected { background-color: rgba(128,128,128,.3); }
+.setting { margin-bottom: 9px; }
+.setting sp-label { display: block; margin-bottom: 1px; }
+.value-row { display: flex; align-items: center; }
+.value-row sp-slider { flex: 1; min-width: 60px; margin-right: 8px; }
+.value-row sp-textfield { width: 62px; flex-shrink: 0; }
+.spin { display: flex; flex-direction: column; margin-left: 3px; }
+.spin sp-action-button { width: 23px; min-width: 23px; height: 15px; min-height: 15px; font-size: 9px; padding: 0; }
+.checks { display: flex; flex-wrap: wrap; }
+.checks sp-checkbox { margin-right: 9px; }
+sp-divider { margin-top: 8px; }
+#status { min-height: 44px; margin: 8px 0; }
+#auto-preview { margin-bottom: 6px; }
+#preview { width: 100%; }
+#split-output { margin-top: 8px; }
+.actions { display: flex; margin-top: 8px; }
+.actions sp-button { flex: 1; }
+.actions sp-button + sp-button { margin-left: 8px; }
+#hint { margin-top: 12px; opacity: .75; }
+.error { color: #ff9b90; }

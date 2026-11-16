@@ -1,0 +1,137 @@
+{
+  "PiPLs": [
+    {
+      "Kind": "Filter",
+      "Name": "Digital8 Native...",
+      "Category": "Digital8",
+      "Version": 4,
+      "SubVersion": 0,
+      "ComponentVersionShortNum": 1,
+      "ComponentVersionMinorRevNum": 2,
+      "ComponentVersionDotRevNum": 1,
+      "ComponentName": "Digital8Native",
+      "CodeEntryPointWin64": "PluginMain",
+      "SupportedModes": {
+        "Bitmap": false,
+        "GrayScale": false,
+        "IndexedColor": false,
+        "RGBColor": true,
+        "CMYKColor": false,
+        "HSLColor": false,
+        "HSBColor": false,
+        "Multichannel": false,
+        "Duotone": false,
+        "LABColor": false
+      },
+      "EnableInfo": "in (PSHOP_ImageMode, RGBMode) && PSHOP_ImageDepth == 8",
+      "PlugInMaxSize": [
+        30000,
+        30000
+      ],
+      "FilterLayerSupport": true,
+      "MonitorScalingAware": false,
+      "FilterCaseInfo": [
+        {
+          "InputHandling": "InStraightData",
+          "OutputHandling": "OutStraightData",
+          "WriteOutsideSelection": false,
+          "FiltersLayerMasks": false,
+          "WorksWithBlankData": true,
+          "DontCopySourceToDestination": false
+        },
+        {
+          "InputHandling": "InStraightData",
+          "OutputHandling": "OutStraightData",
+          "WriteOutsideSelection": false,
+          "FiltersLayerMasks": false,
+          "WorksWithBlankData": true,
+          "DontCopySourceToDestination": false
+        },
+        {
+          "InputHandling": "InStraightData",
+          "OutputHandling": "OutStraightData",
+          "WriteOutsideSelection": false,
+          "FiltersLayerMasks": false,
+          "WorksWithBlankData": true,
+          "DontCopySourceToDestination": false
+        },
+        {
+          "InputHandling": "InStraightData",
+          "OutputHandling": "OutStraightData",
+          "WriteOutsideSelection": false,
+          "FiltersLayerMasks": false,
+          "WorksWithBlankData": true,
+          "DontCopySourceToDestination": false
+        },
+        {
+          "InputHandling": "InStraightData",
+          "OutputHandling": "OutStraightData",
+          "WriteOutsideSelection": false,
+          "FiltersLayerMasks": false,
+          "WorksWithBlankData": true,
+          "DontCopySourceToDestination": false
+        },
+        {
+          "InputHandling": "InStraightData",
+          "OutputHandling": "OutStraightData",
+          "WriteOutsideSelection": false,
+          "FiltersLayerMasks": false,
+          "WorksWithBlankData": true,
+          "DontCopySourceToDestination": false
+        },
+        {
+          "InputHandling": "InStraightData",
+          "OutputHandling": "OutStraightData",
+          "WriteOutsideSelection": false,
+          "FiltersLayerMasks": false,
+          "WorksWithBlankData": true,
+          "DontCopySourceToDestination": false
+        }
+      ],
+      "HasTerminology": {
+        "ClassID": "D8N1",
+        "EventID": "D8N1",
+        "ScopeString": "b0757cac-5771-4653-9004-388c1832665f"
+      },
+      "Terminology": {
+        "MajorVersion": 1,
+        "MinorVersion": 0,
+        "Language": 0,
+        "ScriptCode": 0,
+        "Suites": [
+          {
+            "SuiteName": "Digital8",
+            "SuiteID": "D8N1",
+            "SuiteLevel": 1,
+            "SuiteVersion": 1,
+            "SuiteDescription": "Digital8 native image conversion",
+            "Events": [
+              {
+                "EventName": "Digital8 Native",
+                "EventDescription": "Apply Digital8 using a saved native settings snapshot",
+                "ClassID": "D8N1",
+                "EventType": "D8N1",
+                "ReplyType": "null",
+                "DirectParamType": "#ImR",
+                "DirectParamFlagBits": {
+                  "DirectParamOptional": true,
+                  "ListOfItems": false,
+                  "Enumerated": true,
+                  "ChangesState": true
+                },
+                "Parameters": [
+                  {
+                    "ParamName": "settings",
+                    "ParamKeyword": "d8st",
+                    "ParamType": "TEXT",
+                    "ParamDescription": "Versioned Digital8 settings and RGB palette"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
+}

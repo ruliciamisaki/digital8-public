@@ -1,6 +1,13 @@
 __pycache__/
 *.py[cod]
 
+# Local Adobe SDK supplied for Photoshop plug-in development.
+/adobe_photoshop_sdk_2027_win_v1.0/
+
+# Retired public versions are archived locally.
+/archive/
+/_site/
+
 # Development samples and generated comparisons are local-only.
 sample/
 sample2/
@@ -14,7 +21,9 @@ PC-9801.zip
 *.webp
 *.bmp
 
-# Reference sheets can contain source-derived image fragments and are not part
-# of the public distribution.  Keep all raster reference assets local.
-PC-8801/reference/
-PC-9801/reference/
+# Curated input/output images explicitly selected for the private README.
+!distribution/Digital8_Anime/output_sample/retro/**/*.png
+!distribution/Digital8_Anime/output_sample/anime/source/*.png
+!distribution/Digital8_Anime/output_sample/anime/tol128/*.png
+!distribution/Digital8_Anime/output_sample/anime/tol64/*.png
+!distribution/Digital8_Anime/output_sample/anime/trace/*.png

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"><link rel="stylesheet" href="style.css"></head>
+<body>
+  <div id="app">
+   <div id="content">
+    <div class="heading"><sp-heading size="S">Digital8</sp-heading><sp-detail id="version">C++ Native</sp-detail></div>
+    <sp-body size="S" id="target">画像レイヤー／スマートオブジェクトを選択</sp-body>
+    <sp-action-button id="read-existing">既存のDigital8設定を読み込む</sp-action-button>
+    <div class="select-row"><sp-label>機種</sp-label><sp-dropdown id="machine"><sp-menu slot="options"><sp-menu-item>PC-8801</sp-menu-item><sp-menu-item>PC-9801</sp-menu-item><sp-menu-item selected>アニメ塗り</sp-menu-item></sp-menu></sp-dropdown></div>
+    <div class="select-row">
+      <sp-label>パレット</sp-label>
+      <sp-action-button id="palette" aria-expanded="false" aria-controls="palette-options"></sp-action-button>
+    </div>
+    <div id="palette-options" style="display:none" role="group" aria-label="パレット候補"></div>
+    <div id="swatches"></div>
+    <div class="colour-row"><span id="selected-chip"></span><sp-detail id="colour-info"></sp-detail></div>
+    <div class="colour-row"><sp-textfield id="hex" placeholder="#RRGGBB"></sp-textfield><sp-action-button id="edit-colour">色を変更</sp-action-button></div>
+    <sp-action-button id="toggle-rgb">RGBを調整</sp-action-button><div id="rgb-editor" style="display:none"></div>
+    <div id="tabs"></div><div id="settings"></div>
+   </div>
+   <div id="footer"><sp-divider></sp-divider>
+    <sp-body size="S" id="status">設定を変えたら「プレビュー更新」を押してください。</sp-body>
+    <sp-checkbox id="auto-preview">プレビューを自動更新する</sp-checkbox>
+    <sp-button id="preview" variant="primary">プレビュー更新</sp-button>
+    <sp-checkbox id="split-output" title="画像レイヤーで使用できます">使用色ごとにレイヤーを分ける</sp-checkbox>
+    <div class="actions"><sp-button id="apply" variant="cta">適用</sp-button><sp-button id="cancel" variant="secondary">取消</sp-button></div>
+    <sp-detail id="hint">調整レイヤーを先に効かせるには、元画像と一緒にスマートオブジェクトの中へ入れてください。</sp-detail>
+   </div>
+  </div>
+  <script src="main.js"></script>
+</body></html>

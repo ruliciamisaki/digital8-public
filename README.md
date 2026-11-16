@@ -1,76 +1,103 @@
-# Digital8 — レトロPC風画像変換器
+# Digital8 Anime V4 — レトロPC風画像変換・アニメ塗り
 
-ローカル完結のレトロPC風画像変換器です。PC-8801mk2風、PC-9801VM21以降風の画像に変換します。
+PC-8801風の8色タイル、PC-9801風の16色タイル、パレットで面を塗り分けるアニメ塗りを、一つの画面で使えるローカル画像変換ツールです。
 
-## 現行版：PC-8801 / PC-9801 統合版
+## 起動
 
-V2「頻出パターン式」とV4「2色パターン式」を選べる統合版を開発・更新しています。機種別の旧版は開発終了とし、比較用の履歴として残しています。
-
-- **[ブラウザで使う](https://ruliciamisaki.github.io/digital8-public/)** — インストール不要。画像はブラウザ内で変換し、サーバーへ送信しません。使い方は[ブラウザ版の説明](web/README.md)を参照してください。
-- [統合版を起動する](distribution/Digital8_V2_V4/README.md) — `distribution/Digital8_V2_V4/`で依存ライブラリを入れ、`起動_GUI.bat`を実行
-- [使い方と画面写真](distribution/Digital8_V2_V4/使い方.md)
-- [入力・PC-8801・PC-9801の変換例](distribution/Digital8_V2_V4/サンプル.md)
-
-| 入力画像 | 統合版・PC-8801出力例 | 統合版・PC-9801出力例 |
-| --- | --- | --- |
-| <img src="distribution/Digital8_V2_V4/output_sample/変換元/PC88-98_0000_00005-3273937094.png" alt="入力画像" width="250"> | <img src="distribution/Digital8_V2_V4/output_sample/PC88/PC88-98_0000_00005-3273937094_digital8.png" alt="PC-8801出力例" width="250"> | <img src="distribution/Digital8_V2_V4/output_sample/PC98/PC88-98_0000_00005-3273937094_pc98.png" alt="PC-9801出力例" width="250"> |
-
-この公開版には、実行に必要なソース・固定パレット・文書と、展示用の変換例を収録しています。開発時の解析資料や資料由来の参照PNGは含めません。
-
-## 旧版（開発終了）
-
-以前の機種別V1・V2と解析資料を残しています。以下は旧版の説明と変換例です。
-
-- `PC-8801/`: [旧版の使い方](PC-8801/使い方.md)、[技術解説](PC-8801/技術解説.md)
-- `PC-9801/`: [旧版の使い方](PC-9801/使い方.md)、[技術解説](PC-9801/技術解説.md)
-- `distribution/PC-8801_Digital8_V1/`、`distribution/PC-8801_Digital8_V2/`
-- `distribution/PC-9801_16color_V1/`、`distribution/PC-9801_16color_V2/`
-
-V2の設計とV1との差は `EXPERIMENT_V2.md` を参照してください。
-
-## 旧版V2の変換例
-
-各行は左が入力画像、右がV2での変換結果です。PC-9801版の番号は変換時に選んだ固定パレットを示します。結果は入力画像や設定によって変わります。
-
-### PC-8801・デジタル8色（7例）
-
-| 入力画像 | PC-8801 V2 |
-| --- | --- |
-| <img src="PC-8801/sample/PC88-98_0000_00005-3273937094.png" alt="変換例1の入力画像" width="320"> | <img src="PC-8801/sample/PC88-98_0001_00005-3273937094_pc8801_v2.png" alt="変換例1のPC-8801 V2出力" width="320"> |
-| <img src="PC-8801/sample/PC88-98_0002_00008-912367020.png" alt="変換例2の入力画像" width="320"> | <img src="PC-8801/sample/PC88-98_0003_00008-912367020_pc8801_v2.png" alt="変換例2のPC-8801 V2出力" width="320"> |
-| <img src="PC-8801/sample/PC88-98_0010_00024-3602626460.png" alt="変換例3の入力画像" width="320"> | <img src="PC-8801/sample/PC88-98_0011_00024-3602626460_pc8801_v2.png" alt="変換例3のPC-8801 V2出力" width="320"> |
-| <img src="PC-8801/sample/PC88-98_0014_00028-1267548753.png" alt="変換例4の入力画像" width="320"> | <img src="PC-8801/sample/PC88-98_0015_00028-1267548753_pc8801_v2.png" alt="変換例4のPC-8801 V2出力" width="320"> |
-| <img src="PC-8801/sample/PC88-98_0016_00029-3559016998.png" alt="変換例5の入力画像" width="320"> | <img src="PC-8801/sample/PC88-98_0017_00029-3559016998_pc8801_v2.png" alt="変換例5のPC-8801 V2出力" width="320"> |
-| <img src="PC-8801/sample/PC88-98_0018_00033-3559017002.png" alt="変換例6の入力画像" width="320"> | <img src="PC-8801/sample/PC88-98_0019_00033-3559017002_pc8801_v2.png" alt="変換例6のPC-8801 V2出力" width="320"> |
-| <img src="PC-8801/sample/PC88-98_0020_00036-3559017005.png" alt="変換例7の入力画像" width="320"> | <img src="PC-8801/sample/PC88-98_0021_00036-3559017005_pc8801_v2.png" alt="変換例7のPC-8801 V2出力" width="320"> |
-
-### PC-9801・4096色中16色（7例）
-
-| 入力画像 | PC-9801 V2 |
-| --- | --- |
-| <img src="PC-9801/sample/PC88-98_0000_00005-3273937094.png" alt="変換例1の入力画像" width="320"> | <img src="PC-9801/sample/PC88-98_0000_00005-3273937094_pc9801_v2_palette01.png" alt="パレット01でのPC-9801 V2出力" width="320"><br>パレット01 |
-| <img src="PC-9801/sample/PC88-98_0002_00008-912367020.png" alt="変換例2の入力画像" width="320"> | <img src="PC-9801/sample/PC88-98_0002_00008-912367020_pc9801_v2_pallete02.png" alt="パレット02でのPC-9801 V2出力" width="320"><br>パレット02 |
-| <img src="PC-9801/sample/PC88-98_0010_00024-3602626460.png" alt="変換例3の入力画像" width="320"> | <img src="PC-9801/sample/PC88-98_0010_00024-3602626460_pc9801_v2_pallete02.png" alt="パレット02でのPC-9801 V2出力" width="320"><br>パレット02 |
-| <img src="PC-9801/sample/PC88-98_0014_00028-1267548753.png" alt="変換例4の入力画像" width="320"> | <img src="PC-9801/sample/PC88-98_0014_00028-1267548753_pc9801_v2_pallete05.png" alt="パレット05でのPC-9801 V2出力" width="320"><br>パレット05 |
-| <img src="PC-9801/sample/PC88-98_0016_00029-3559016998.png" alt="変換例5の入力画像" width="320"> | <img src="PC-9801/sample/PC88-98_0016_00029-3559016998_pc9801_v2_pallete08.png" alt="パレット08でのPC-9801 V2出力" width="320"><br>パレット08 |
-| <img src="PC-9801/sample/PC88-98_0018_00033-3559017002.png" alt="変換例6の入力画像" width="320"> | <img src="PC-9801/sample/PC88-98_0018_00033-3559017002_pc9801_v2_pallete02.png" alt="パレット02でのPC-9801 V2出力" width="320"><br>パレット02 |
-| <img src="PC-9801/sample/PC88-98_0020_00036-3559017005.png" alt="変換例7の入力画像" width="320"> | <img src="PC-9801/sample/PC88-98_0020_00036-3559017005_pc9801_v2_pallete05.png" alt="パレット05でのPC-9801 V2出力" width="320"><br>パレット05 |
-
-両機種のV1・V2とも、R/G/B、彩度、明度、コントラストをGUIで調整できます。
-各スライダーの右側では数値を直接入力できます。色調整の結果は入力プレビューへリアルタイムに反映され、そのまま変換処理にも使われます。
-「入力を横幅640pxへ縮小」を有効にすると、幅640pxを超える画像を縦横比を保って縮小してから色調整・変換します。幅640px以下の画像は拡大しません。
-縮小処理には既存依存のPillowによるLANCZOSリサンプリングを使用します（Pillow: MIT-CMU License）。
-
-各配布フォルダで、初回だけ次を実行してください。
+Python 3.10以降を用意して、次を実行します。
 
 ```powershell
+cd distribution/Digital8_Anime
 python -m pip install -r requirements.txt
+python digital8_gui.py
 ```
 
-その後、V1は `起動_GUI_V1.bat`、V2は `起動_GUI_V2.bat` を実行します。
+次回からは `distribution/Digital8_Anime/起動_GUI.bat` でも起動できます。
 
-## License
+- [Digital8 Anime V4の使い方・設定](distribution/Digital8_Anime/README.md)
+- [変換サンプル一覧](distribution/Digital8_Anime/サンプル.md)
+- [ブラウザで使う](https://ruliciamisaki.github.io/digital8-public/)（PC-8801／PC-9801／アニメ塗り）
+- [Photoshop版の使い方](photoshop/README.md)（UXPパネル＋Python不要のC++エンジン、メイン画面プレビュー対応）
 
-This project is released under the [MIT License](LICENSE).
+## 使い方
 
-変換例の画像は動作例の表示用であり、ソフトウェア本体のMITライセンスの対象外です。画像の権利は各権利者に帰属します。
+1. 「選択…」で入力画像を開くか、画面に画像をドラッグ＆ドロップします。
+2. PC-8801、PC-9801、アニメ塗りから標準プリセットを選び、パレットや線の設定を調整します。
+3. 「プレビュー更新」で確認します。「プレビューを自動更新する」をオンにすると、設定変更が同じ窓に反映されます。
+4. 出力形式と保存先を選び、「変換・保存」を押します。Photoshopで色やタイルごとのレイヤーを編集する場合はPSDを選びます。
+
+Python版の起動・編集は `distribution/Digital8_Anime/` を使います。旧版のソースは過去のコミットから確認できます。
+
+## 機能
+
+| 機種 | パレット・塗り方 |
+| --- | --- |
+| PC-8801 | デジタル8色／Dinsor、V4 2色パターン式 |
+| PC-9801 | 16色パレット、V4 2色パターン式 |
+| アニメ塗り | カラーTE／TE肌+／CW、各彩度上げ版、Cel120、編集可能なCustom。使用色数を指定してベタ塗り |
+
+共通の色補正、仮想ピクセル、主線・輪郭抽出、0.25刻みの線の太さ、色トレス、透明度の保持・二値化に対応しています。プレビューは手動・自動更新に対応し、同じ窓で100%表示や倍率変更ができ、PNG・塗り色／パターン別のレイヤーPSD・透明PNGのZIPで出力できます。
+
+PC-8801／9801の2色パターン式には、交互7:1と、選択・無効化できる3色タイル（1:1:2を3種類、1:1:1を2種類）があります。塗り色はPhotoshop版と同じく全画面共通の色区分で決めます。初期値は3色なしです。
+
+「2倍拡大・1/2縮小」でLANCZOS補間によるなめらかな仕上げも選べます。640px調整がOFFなら2倍で変換して縮小し、ONなら640px化・変換の後に拡大と縮小を行います。補間で中間色が生まれるため、この設定がONの出力は指定色数を超えることがあります。
+
+アニメ塗り標準は色差128・24色です。以下のサンプルでは、比較用にカラーTE 彩度上げと線の太さ0.5を指定しています。
+
+アニメ塗りの面処理はNumbaで高速化しています。初回にはコンパイル時間が加わり、次回以降はキャッシュを再利用します。Numba未導入時は同じ処理のPython実装で動作します。
+
+アニメ塗りは全画面共通の色・明暗の区分を先に作り、その基準で塗り分けてから小さな斑点を整理します。通常／2倍処理でも元サイズから同じ色基準を作り、平滑化と整理面積を換算して影の配置差を抑えます。線を太くする挙動はこれまでどおりです。
+
+PNG出力には変換設定とパレットのRGBを埋め込みます。アプリへドロップすると設定を復元し、同じフォルダーに元画像があればSHA-256を確認して入力も元画像へ戻します。
+
+全機種でパレット編集に対応します。PC-8801は8色、PC-9801は16色のRGBを編集し、機種別のCustomとして使用できます。JSONへの保存・読み込みと、PNGからの復元も可能です。
+
+## PC-8801 / PC-9801の変換例
+
+入力・デジタル8色・16色パレットの掲載済みサンプルです。画像をクリックすると640×400pxのPNGを開けます。
+
+| 変換元 | PC-8801出力例 | PC-9801出力例 |
+| --- | --- | --- |
+| <a href="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0000_00005-3273937094.png"><img src="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0000_00005-3273937094.png" width="250" alt="変換元 0000"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0000_00005-3273937094_digital8.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0000_00005-3273937094_digital8.png" width="250" alt="PC-8801出力 0000"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0000_00005-3273937094_pc98.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0000_00005-3273937094_pc98.png" width="250" alt="PC-9801出力 0000"></a><br>01 Dovema |
+| <a href="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0002_00008-912367020.png"><img src="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0002_00008-912367020.png" width="250" alt="変換元 0002"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0002_00008-912367020_digital8.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0002_00008-912367020_digital8.png" width="250" alt="PC-8801出力 0002"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0002_00008-912367020_pc98.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0002_00008-912367020_pc98.png" width="250" alt="PC-9801出力 0002"></a><br>01 Dovema |
+| <a href="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0010_00024-3602626460.png"><img src="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0010_00024-3602626460.png" width="250" alt="変換元 0010"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0010_00024-3602626460_digital8.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0010_00024-3602626460_digital8.png" width="250" alt="PC-8801出力 0010"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0010_00024-3602626460_pc98.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0010_00024-3602626460_pc98.png" width="250" alt="PC-9801出力 0010"></a><br>05 Dukena |
+| <a href="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0014_00028-1267548753.png"><img src="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0014_00028-1267548753.png" width="250" alt="変換元 0014"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0014_00028-1267548753_digital8.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0014_00028-1267548753_digital8.png" width="250" alt="PC-8801出力 0014"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0014_00028-1267548753_pc98.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0014_00028-1267548753_pc98.png" width="250" alt="PC-9801出力 0014"></a><br>05 Dukena |
+| <a href="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0016_00029-3559016998.png"><img src="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0016_00029-3559016998.png" width="250" alt="変換元 0016"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0016_00029-3559016998_digital8.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0016_00029-3559016998_digital8.png" width="250" alt="PC-8801出力 0016"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0016_00029-3559016998_pc98.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0016_00029-3559016998_pc98.png" width="250" alt="PC-9801出力 0016"></a><br>09 Silven |
+| <a href="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0018_00033-3559017002.png"><img src="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0018_00033-3559017002.png" width="250" alt="変換元 0018"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0018_00033-3559017002_digital8.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0018_00033-3559017002_digital8.png" width="250" alt="PC-8801出力 0018"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0018_00033-3559017002_pc98.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0018_00033-3559017002_pc98.png" width="250" alt="PC-9801出力 0018"></a><br>11 Camuri |
+| <a href="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0020_00036-3559017005.png"><img src="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0020_00036-3559017005.png" width="250" alt="変換元 0020"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0020_00036-3559017005_digital8.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0020_00036-3559017005_digital8.png" width="250" alt="PC-8801出力 0020"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0020_00036-3559017005_pc98.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC98/PC88-98_0020_00036-3559017005_pc98.png" width="250" alt="PC-9801出力 0020"></a><br>12 Camura |
+
+## PC-8801: Dinsorパレットとの比較
+
+同じ変換元のデジタル8色版とDinsor版です。
+
+| 変換元 | デジタル8色 | Dinsor |
+| --- | --- | --- |
+| <a href="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0010_00024-3602626460.png"><img src="distribution/Digital8_Anime/output_sample/retro/変換元/PC88-98_0010_00024-3602626460.png" width="250" alt="変換元 0010"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0010_00024-3602626460_digital8.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0010_00024-3602626460_digital8.png" width="250" alt="デジタル8色版 0010"></a> | <a href="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0010_00024-3602626460_dinosor8.png"><img src="distribution/Digital8_Anime/output_sample/retro/PC88/PC88-98_0010_00024-3602626460_dinosor8.png" width="250" alt="Dinsor版 0010"></a> |
+
+## アニメ塗り：色差128 / 64
+
+アニメ塗り専用の入力画像7枚を原寸で変換しています。画像をクリックすると原寸PNGを開けます。
+
+共通設定は **カラーTE 彩度上げ（`te_saturated`）・使用色数24・線の太さ0.5・色トレスなし** です。主線しきい値58、輪郭抽出1.00、仮想ピクセル1、周囲をならす半径3、小さい面の整理12。縦長ドットと640px調整はOFF、色補正はすべて1.00です。列間では「面をまとめる色差」だけを128／64へ変えています。
+
+| 入力画像 | アニメ塗り・色差128 | アニメ塗り・色差64 |
+| --- | --- | --- |
+| <a href="distribution/Digital8_Anime/output_sample/anime/source/00505-1900052826.png"><img src="distribution/Digital8_Anime/output_sample/anime/source/00505-1900052826.png" width="250" alt="アニメ塗り入力1 00505-1900052826"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol128/00505-1900052826.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol128/00505-1900052826.png" width="250" alt="アニメ塗り 色差128 1"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol64/00505-1900052826.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol64/00505-1900052826.png" width="250" alt="アニメ塗り 色差64 1"></a> |
+| <a href="distribution/Digital8_Anime/output_sample/anime/source/00506-786292313.png"><img src="distribution/Digital8_Anime/output_sample/anime/source/00506-786292313.png" width="250" alt="アニメ塗り入力2 00506-786292313"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol128/00506-786292313.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol128/00506-786292313.png" width="250" alt="アニメ塗り 色差128 2"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol64/00506-786292313.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol64/00506-786292313.png" width="250" alt="アニメ塗り 色差64 2"></a> |
+| <a href="distribution/Digital8_Anime/output_sample/anime/source/00008-2085017498.png"><img src="distribution/Digital8_Anime/output_sample/anime/source/00008-2085017498.png" width="250" alt="アニメ塗り入力3 00008-2085017498"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol128/00008-2085017498.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol128/00008-2085017498.png" width="250" alt="アニメ塗り 色差128 3"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol64/00008-2085017498.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol64/00008-2085017498.png" width="250" alt="アニメ塗り 色差64 3"></a> |
+| <a href="distribution/Digital8_Anime/output_sample/anime/source/00035-438693616.png"><img src="distribution/Digital8_Anime/output_sample/anime/source/00035-438693616.png" width="250" alt="アニメ塗り入力4 00035-438693616"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol128/00035-438693616.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol128/00035-438693616.png" width="250" alt="アニメ塗り 色差128 4"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol64/00035-438693616.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol64/00035-438693616.png" width="250" alt="アニメ塗り 色差64 4"></a> |
+| <a href="distribution/Digital8_Anime/output_sample/anime/source/00051-2140102643.png"><img src="distribution/Digital8_Anime/output_sample/anime/source/00051-2140102643.png" width="250" alt="アニメ塗り入力5 00051-2140102643"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol128/00051-2140102643.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol128/00051-2140102643.png" width="250" alt="アニメ塗り 色差128 5"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol64/00051-2140102643.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol64/00051-2140102643.png" width="250" alt="アニメ塗り 色差64 5"></a> |
+| <a href="distribution/Digital8_Anime/output_sample/anime/source/00011-2623508507.png"><img src="distribution/Digital8_Anime/output_sample/anime/source/00011-2623508507.png" width="250" alt="アニメ塗り入力6 00011-2623508507"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol128/00011-2623508507.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol128/00011-2623508507.png" width="250" alt="アニメ塗り 色差128 6"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol64/00011-2623508507.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol64/00011-2623508507.png" width="250" alt="アニメ塗り 色差64 6"></a> |
+| <a href="distribution/Digital8_Anime/output_sample/anime/source/00000-2610654151.png"><img src="distribution/Digital8_Anime/output_sample/anime/source/00000-2610654151.png" width="250" alt="アニメ塗り入力7 00000-2610654151"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol128/00000-2610654151.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol128/00000-2610654151.png" width="250" alt="アニメ塗り 色差128 7"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol64/00000-2610654151.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol64/00000-2610654151.png" width="250" alt="アニメ塗り 色差64 7"></a> |
+
+## アニメ塗り：色トレスなし / あり
+
+上の表の先頭画像を使った比較です。色差128の「色トレスなし」は上と同じPNGを再掲しています。他の設定はそのままで、右列だけ色トレスをON（明度0.55）にしています。
+
+| 入力画像 | 色トレスなし・色差128 | 色トレスあり・色差128 |
+| --- | --- | --- |
+| <a href="distribution/Digital8_Anime/output_sample/anime/source/00505-1900052826.png"><img src="distribution/Digital8_Anime/output_sample/anime/source/00505-1900052826.png" width="250" alt="色トレス比較の入力"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/tol128/00505-1900052826.png"><img src="distribution/Digital8_Anime/output_sample/anime/tol128/00505-1900052826.png" width="250" alt="色トレスなし 色差128"></a> | <a href="distribution/Digital8_Anime/output_sample/anime/trace/00505-1900052826_tol128_trace.png"><img src="distribution/Digital8_Anime/output_sample/anime/trace/00505-1900052826_tol128_trace.png" width="250" alt="色トレスあり 色差128"></a> |
+
+## ライセンス
+
+Digital8のソフトウェアは [MITライセンス](LICENSE) です。変換サンプルの画像はMITライセンスの対象外です。
