@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+from collections.abc import Iterable
 from contextlib import nullcontext
 from dataclasses import dataclass, replace
 from pathlib import Path
@@ -21,7 +22,7 @@ import pc9801_16_v4 as pc98_two_colour
 import png_settings
 import retro_global
 import tile_patterns
-from layer_export import ConversionDocument, write_psd, write_zip
+from layer_export import PSD_LAYER_MODES, ConversionDocument, write_psd, write_zip
 
 ROOT = Path(__file__).resolve().parent
 MACHINES = ("pc8801", "pc9801", "anime")
@@ -244,7 +245,7 @@ def _anime_image(source: Path | Image.Image, settings: ConversionOptions,
     return _finish_document(image, layer_ids, names, alpha, logical_size, output_size, settings)
 
 
-def _finish_document(image, ids, names, alpha, logical_size, output_size, settings):
+def _finish_document(image, ids, names, alpha, logical_size, output_size, settings, tile_colours=None):
     image = image.resize(logical_size, Image.Resampling.NEAREST)
     labels = Image.fromarray(ids, "I").resize(logical_size, Image.Resampling.NEAREST)
     if settings.tall_dots:
@@ -256,7 +257,8 @@ def _finish_document(image, ids, names, alpha, logical_size, output_size, settin
         values = np.full((image.height, image.width), 255, dtype=np.uint8) if alpha is None else np.array(alpha)
         values[white] = 0
         alpha = Image.fromarray(values, "L")
-    return ConversionDocument(image_processing.preserve_alpha(image, alpha), alpha, np.asarray(labels), names)
+    return ConversionDocument(image_processing.preserve_alpha(image, alpha), alpha, np.asarray(labels),
+                              names, tile_colours or {})
 
 
 def _paletted(indices: np.ndarray, palette: np.ndarray) -> Image.Image:
@@ -314,7 +316,16 @@ def _retro_image(source, settings, reference=None, spatial_scale=1):
         )
     indices, fringe = line_effects.fractional_growth(indices, ink, settings.line_growth, palette, permitted, visible)
     ids[fringe] = ink_id
-    return _finish_document(_paletted(indices, palette), ids, names, alpha, logical_size, output_size, settings)
+    tile_colours = {}
+    for index in names:
+        if index == ink_id:
+            continue
+        recipe = recipes[index]
+        dots = palette[list(recipe.tile)]
+        if np.any(dots[1:] != dots[0]):
+            tile_colours[index] = tuple(int(channel + 0.5) for channel in recipe.target)
+    return _finish_document(_paletted(indices, palette), ids, names, alpha, logical_size, output_size,
+                            settings, tile_colours)
 
 
 def _validate_options(settings: ConversionOptions) -> None:
@@ -366,7 +377,7 @@ def _smooth_document(document: ConversionDocument, size: tuple[int, int],
     labels = document.labels
     if labels.shape != (size[1], size[0]):
         labels = np.asarray(Image.fromarray(labels.astype(np.int32), "I").resize(size, Image.Resampling.NEAREST))
-    return ConversionDocument(image, alpha, labels, document.names)
+    return ConversionDocument(image, alpha, labels, document.names, document.tile_colours)
 
 
 def convert_document(source: Path | Image.Image, settings: ConversionOptions = ConversionOptions()) -> ConversionDocument:
@@ -406,13 +417,14 @@ def convert(
     settings: ConversionOptions = ConversionOptions(),
     alpha_mask: Path | None = None,
     invert_alpha_mask: bool = False,
+    *,
+    psd_layers: str | Iterable[str] = (),
 ) -> Image.Image:
     document = convert_document(source, settings)
-    result, alpha = document.image, document.alpha
     destination = Path(destination)
     destination.parent.mkdir(parents=True, exist_ok=True)
     if destination.suffix.lower() == ".psd":
-        write_psd(destination, document)
+        write_psd(destination, document, extra_layers=psd_layers)
     elif destination.suffix.lower() == ".zip":
         write_zip(destination, document)
     else:
@@ -422,19 +434,21 @@ def convert(
             save_options["pnginfo"] = png_settings.png_info(
                 source, settings, palette, alpha_mask is not None, invert_alpha_mask,
             )
-        result.save(destination, optimize=False, **save_options)
+        document.image.save(destination, optimize=False, **save_options)
     if alpha_mask is not None:
         alpha_mask = Path(alpha_mask)
         alpha_mask.parent.mkdir(parents=True, exist_ok=True)
-        mask_alpha = alpha if alpha is not None else Image.new("L", result.size, 255)
+        mask_alpha = document.alpha if document.alpha is not None else Image.new("L", document.image.size, 255)
         image_processing.alpha_mask_image(mask_alpha, invert_alpha_mask).save(alpha_mask)
-    return result
+    return document.image
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description="Digital8 Anime V4 converter")
     parser.add_argument("input", type=Path)
     parser.add_argument("output", type=Path)
+    parser.add_argument("--psd-layers", choices=PSD_LAYER_MODES, action="append", default=[],
+                        help="repeat to add colour or fill groups to the patterned PSD")
     parser.add_argument("--preset", choices=MACHINES, default="pc8801")
     parser.add_argument("--machine", choices=MACHINES)
     parser.add_argument("--palette")
@@ -500,7 +514,7 @@ def main() -> None:
                 settings = replace(settings, palette_id="custom", retro_palette=colours)
         except (ValueError, OSError) as error:
             parser.error(str(error))
-    convert(args.input, args.output, settings, args.alpha_mask)
+    convert(args.input, args.output, settings, args.alpha_mask, psd_layers=args.psd_layers)
 
 
 if __name__ == "__main__":

@@ -1,5 +1,5 @@
 "use strict";
-const { canSplitLayer, captureColourLayers, writeColourLayers } = require("./colour_layers.js");
+const { canSplitLayer, captureLayerOutput, writeLayerOutput, createFillTransfer } = require("./colour_layers.js");
 const FILTER = "b0757cac-5771-4653-9004-388c1832665f";
 async function readTarget(ps) {
     const doc = ps.app.activeDocument;
@@ -27,10 +27,10 @@ class PreviewSession {
         this.ps = ps; this.status = status; this.running = false;
         this.queue = []; this.wake = null; this.closing = false;
     }
-    request(type, snapshot) {
+    request(type, snapshot, layers) {
         if (this.closing) return Promise.reject(new Error("プレビューを終了しています。"));
         if (!this.running && type === "cancel") return Promise.resolve();
-        const result = new Promise((resolve, reject) => this.queue.push({ type, snapshot, resolve, reject }));
+        const result = new Promise((resolve, reject) => this.queue.push({ type, snapshot, layers, resolve, reject }));
         if (!this.running) {
             this.running = true;
             this.completion = this.ps.core.executeAsModal(context => this.loop(context), {
@@ -42,20 +42,20 @@ class PreviewSession {
                 this.status("idle");
             });
         }
-        if (type === "cancel" || type === "commit" || type === "split") this.closing = true;
+        if (type === "cancel" || type === "commit") this.closing = true;
         if (this.wake) { const wake = this.wake; this.wake = null; wake(); }
         return result;
     }
     update(snapshot) { return this.request("preview", snapshot); }
     inspect(read) { if (!this.running) throw new Error("No active preview"); return this.request("inspect", read); }
-    async commit(snapshot, split = false) {
-        const count = await this.request(split ? "split" : "commit", snapshot);
+    async commit(snapshot, layers = {}) {
+        const grouped = await this.request("commit", snapshot, layers);
         await this.completion;
-        return count;
+        return grouped;
     }
     async cancel() { await this.request("cancel"); if (this.completion) await this.completion; }
     async loop(context) {
-        let suspension = null, rendered = null, active = null, documentID = null, hiddenSource = null;
+        let suspension = null, rendered = null, active = null, documentID = null, hiddenSource = null, transfer = null;
         const rollback = async (redraw = false) => {
             if (suspension) { await context.hostControl.resumeHistory(suspension, false); suspension = null; }
             rendered = null;
@@ -75,13 +75,17 @@ class PreviewSession {
                 if (active.type === "cancel") {
                     await rollback(true); active.resolve(); active = null; return;
                 }
-                const split = active.type === "split";
-                if (split && !canSplitLayer(this.ps, current.activeLayers[0]))
-                    throw new Error("色別レイヤー出力は画像レイヤーで使えます。");
-                if (active.snapshot !== rendered) {
+                // Preview has no layer-output options. Applying to a pixel layer
+                // always writes the patterned group, even with no alternatives.
+                const split = active.type === "commit" && canSplitLayer(this.ps, current.activeLayers[0]);
+                if (split || active.snapshot !== rendered) {
                     this.status("rendering"); await rollback();
                     suspension = await context.hostControl.suspendHistory({ documentID, name: "Digital8" });
                     const filter = { _obj: FILTER, "$d8st": active.snapshot };
+                    if (split) {
+                        transfer = await createFillTransfer();
+                        filter.$d8fm = transfer.path;
+                    }
                     const command = target.existing ? { _obj: "set", _target: [{ _ref: "filterFX", _index: target.existing.index }, { _ref: "layer", _id: target.layerID }], filterFX: { _obj: "filterFX", filter } } : filter;
                     command._options = { dialogOptions: "silent" };
                     const result = await this.ps.action.batchPlay([command], {});
@@ -92,21 +96,24 @@ class PreviewSession {
                 }
                 if (split) {
                     this.status("splitting");
-                    const output = await captureColourLayers(this.ps, current, current.activeLayers[0], active.snapshot);
-                    if (context.isCancelled) throw new Error("色別レイヤーの作成をキャンセルしました。");
+                    const fillMap = await transfer.read();
+                    await transfer.dispose();
+                    transfer = null;
+                    const output = await captureLayerOutput(this.ps, current, current.activeLayers[0], active.snapshot);
+                    if (context.isCancelled) throw new Error("追加レイヤーの作成をキャンセルしました。");
                     await rollback();
-                    suspension = await context.hostControl.suspendHistory({ documentID, name: "Digital8 色別レイヤー" });
+                    suspension = await context.hostControl.suspendHistory({ documentID, name: "Digital8 追加レイヤー" });
                     const source = current.activeLayers[0];
-                    const count = await writeColourLayers(this.ps, context, current, source, output);
-                    if (context.isCancelled) throw new Error("色別レイヤーの作成をキャンセルしました。");
+                    await writeLayerOutput(this.ps, context, current, source, output, fillMap, active.layers);
+                    if (context.isCancelled) throw new Error("追加レイヤーの作成をキャンセルしました。");
                     // Hide last. Photoshop can exclude visibility from its history.
                     if (source.visible) { source.visible = false; hiddenSource = source; }
                     await context.hostControl.resumeHistory(suspension, true); suspension = null;
-                    active.resolve(count); active = null; return;
+                    active.resolve(true); active = null; return;
                 }
                 if (active.type === "commit") {
                     await context.hostControl.resumeHistory(suspension, true); suspension = null;
-                    active.resolve(); active = null; return;
+                    active.resolve(false); active = null; return;
                 }
                 this.status("preview"); active.resolve(); active = null;
             }
@@ -121,6 +128,10 @@ class PreviewSession {
             }
             if (active) active.reject(error);
             throw error;
+        } finally {
+            if (transfer) {
+                try { await transfer.dispose(); } catch (_) { /* the UXP temporary folder is cleared on unload */ }
+            }
         }
     }
 }

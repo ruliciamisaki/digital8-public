@@ -34,9 +34,10 @@ sp-dropdown { flex: 1; min-width: 0; }
 .checks sp-checkbox { margin-right: 9px; }
 sp-divider { margin-top: 8px; }
 #status { min-height: 44px; margin: 8px 0; }
+#operation-error { max-height: 85px; overflow-y: auto; overflow-wrap: break-word; margin-bottom: 8px; padding: 5px 8px; border-left: 3px solid #e36559; }
 #auto-preview { margin-bottom: 6px; }
 #preview { width: 100%; }
-#split-output { margin-top: 8px; }
+#layer-output { margin-top: 8px; }
 .actions { display: flex; margin-top: 8px; }
 .actions sp-button { flex: 1; }
 .actions sp-button + sp-button { margin-left: 8px; }

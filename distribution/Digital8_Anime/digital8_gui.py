@@ -19,6 +19,7 @@ import digital8_converter as converter
 import png_settings
 from palette_editor import PaletteEditor
 from display_support import enable_native_pixels
+from layer_export import PSD_EXTRA_GROUPS
 from preview_window import PreviewWindow
 
 try:
@@ -107,6 +108,7 @@ class App(ttk.Frame):
         self.trace_strength = tk.DoubleVar(value=.55)
         self.white_transparent = tk.BooleanVar(value=False)
         self.output_format = tk.StringVar(value="PNG")
+        self.psd_extra_layers = {mode: tk.BooleanVar(value=False) for mode in PSD_EXTRA_GROUPS}
         self.auto_preview = tk.BooleanVar(value=False)
         self.anime_colours = converter.anime_paint.default_palette()
         self.retro_colours = {}
@@ -146,6 +148,8 @@ class App(ttk.Frame):
         ):
             variable.trace_add("write", self._schedule_preview)
         self.auto_preview.trace_add("write", self._schedule_preview)
+        self.output_format.trace_add("write", self._update_psd_controls)
+        self.output_path.trace_add("write", self._update_psd_controls)
 
     def _build(self) -> None:
         self.grid(sticky="nsew")
@@ -198,8 +202,12 @@ class App(ttk.Frame):
                                     values=("PNG", "PSD", "ZIP"), state="readonly", width=14)
         format_picker.grid(row=2, column=1, sticky="w", padx=6, pady=(6, 0))
         format_picker.bind("<<ComboboxSelected>>", self.change_output_format)
-        ttk.Label(platform, text="PSD / ZIP は塗り色・パターン別レイヤー＋主線を保存").grid(
-            row=2, column=2, columnspan=4, sticky="w", pady=(6, 0))
+        ttk.Label(platform, text="PSDの追加レイヤー").grid(row=2, column=2, sticky="w", pady=(6, 0))
+        self.psd_layer_checkboxes = []
+        for column, (mode, label) in enumerate(PSD_EXTRA_GROUPS.items(), start=3):
+            checkbox = ttk.Checkbutton(platform, text=label, variable=self.psd_extra_layers[mode], state="disabled")
+            checkbox.grid(row=2, column=column, sticky="w", padx=6, pady=(6, 0))
+            self.psd_layer_checkboxes.append(checkbox)
         ttk.Checkbutton(platform, text="2倍拡大・1/2縮小（LANCZOS）", variable=self.smooth_2x).grid(
             row=3, column=0, columnspan=4, sticky="w", pady=(6, 0))
         ttk.Label(platform, text="640px ON：変換後に適用 / OFF：2倍で変換して縮小").grid(
@@ -456,6 +464,15 @@ class App(ttk.Frame):
         if current:
             self.output_path.set(str(Path(current).with_suffix("." + self.output_format.get().lower())))
 
+    def _is_psd_output(self) -> bool:
+        path = self.output_path.get().strip()
+        return Path(path).suffix.lower() == ".psd" if path else self.output_format.get() == "PSD"
+
+    def _update_psd_controls(self, *_args) -> None:
+        state = "!disabled" if self._is_psd_output() else "disabled"
+        for checkbox in self.psd_layer_checkboxes:
+            checkbox.state([state])
+
     def open_output_folder(self) -> None:
         text = self.output_path.get().strip()
         folder = Path(text).parent if text else Path.cwd()
@@ -583,19 +600,20 @@ class App(ttk.Frame):
         self.status.set("保存用に変換中…" if save else "プレビューを計算中…")
         started = time.perf_counter()
         revision = self._preview_revision
+        psd_layers = tuple(mode for mode, enabled in self.psd_extra_layers.items() if enabled.get()) if save else ()
         threading.Thread(
             target=self._worker,
-            args=(self._results, source, destination, settings, save, alpha_mask, self.invert_alpha_mask.get()),
+            args=(self._results, source, destination, settings, save, alpha_mask, self.invert_alpha_mask.get(), psd_layers),
             daemon=True,
         ).start()
         self._job_after = self.master.after(40, self._poll_result, save, destination, automatic, revision, started)
 
     @staticmethod
     def _worker(results: SimpleQueue, source: Path, destination: Path, settings: converter.ConversionOptions,
-                save: bool, alpha_mask: Path | None, invert: bool) -> None:
+                save: bool, alpha_mask: Path | None, invert: bool, psd_layers: tuple[str, ...]) -> None:
         try:
             if save:
-                result = converter.convert(source, destination, settings, alpha_mask, invert)
+                result = converter.convert(source, destination, settings, alpha_mask, invert, psd_layers=psd_layers)
             else:
                 result, _alpha = converter.convert_image(source, settings)
         except Exception as error:

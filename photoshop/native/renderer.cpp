@@ -168,7 +168,7 @@ Settings decode(const std::string& text) {
     for(size_t i=0;i<sizeof(s);i++)p[i]=uint8_t(hex(text[5+i*2])*16+hex(text[6+i*2]));validate(s);return s;
 }
 
-Image render(const Image& input,const Settings& s,const Hooks& hooks) {
+Image render(const Image& input,const Settings& s,const Hooks& hooks,FillMap* fills) {
     validate(s);
     if(input.width<=0||input.height<=0||uint64_t(input.width)*input.height>8000000
         ||input.rgba.size()!=size_t(input.width)*input.height*4)throw std::runtime_error("Digital8 supports up to 8 million RGB pixels in this version");
@@ -422,13 +422,32 @@ Image render(const Image& input,const Settings& s,const Hooks& hooks) {
         if(dark<0)continue;float a=cardinal?fraction:fraction*fraction;auto c=colour(s.colours[original[p]]),d=colour(s.colours[dark]);for(int i=0;i<3;i++)c[i]=c[i]*(1-a)+d[i]*a;auto f=feature(c,false);float best=std::numeric_limits<float>::infinity();
         for(int id:permitted){float cosine=(f[1]*labs[id][1]+f[2]*labs[id][2])/std::max(f[3]*labs[id][3],1e-8f);bool hue=f[3]<=.025f?labs[id][3]<=.035f:cosine>=.8f||labs[id][3]<.02f;
             if(!hue||luma(colour(s.colours[id]))>luma(colour(s.colours[original[p]]))+1)continue;float score=plain_distance(f,labs[id]);if(score<best){best=score;output_ids[p]=uint16_t(id);}}
-    }}
+    }
+    if(fills)for(int p=0;p<n;++p)if(output_ids[p]!=original[p])ink[p]=2;
+    }
     tick(hooks,90);
     Image out{input.width,input.height,std::vector<uint8_t>(input.rgba.size())};
+    if(fills){
+        fills->styles.clear();
+        fills->styles.reserve(recipe_ids.size());
+        for(int id:recipe_ids){
+            const auto& recipe=rs[id];
+            const auto first=s.colours[recipe.tile.front()];
+            const bool mixed=std::any_of(recipe.tile.begin(),recipe.tile.end(),[&](uint16_t index){
+                const auto dot=s.colours[index];
+                return dot.r!=first.r || dot.g!=first.g || dot.b!=first.b;
+            });
+            const auto& c=recipe.target;
+            fills->styles.push_back({{byte(c[0]+.5f),byte(c[1]+.5f),byte(c[2]+.5f)},uint8_t(mixed)});
+        }
+        fills->ids.resize(size_t(input.width)*input.height);
+    }
     for(int y=0;y<input.height;y++)for(int x=0;x<input.width;x++){
         int ly=s.tall_dots?y/2:y,gx=std::min(w-1,int((x+.5)*w/input.width)),gy=std::min(h-1,int((ly+.5)*h/logical_h));
-        auto c=s.colours[output_ids[gy*w+gx]];size_t p=size_t(y)*input.width+x;out.rgba[p*4]=c.r;out.rgba[p*4+1]=c.g;out.rgba[p*4+2]=c.b;
+        const int g=gy*w+gx;
+        auto c=s.colours[output_ids[g]];size_t p=size_t(y)*input.width+x;out.rgba[p*4]=c.r;out.rgba[p*4+1]=c.g;out.rgba[p*4+2]=c.b;
         out.rgba[p*4+3]=(s.white_transparent&&c.r==255&&c.g==255&&c.b==255)?0:alpha(input.rgba[p*4+3]);
+        if(fills)fills->ids[p]=ink[g] ? line_fill_id : indices[g];
     }
     tick(hooks,100);return out;
 }

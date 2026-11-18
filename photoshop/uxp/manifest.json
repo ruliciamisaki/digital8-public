@@ -2,7 +2,7 @@
   "manifestVersion": 5,
   "id": "digital8-native-panel-dev",
   "name": "Digital8 Native Panel",
-  "version": "0.3.18",
+  "version": "0.3.22",
   "main": "index.html",
   "host": {
     "app": "PS",

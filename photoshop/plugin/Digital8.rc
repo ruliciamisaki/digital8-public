@@ -3,7 +3,7 @@
 #pragma code_page(65001)
 IDD_SETTINGS DIALOGEX 0,0,374,306
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
-CAPTION "Digital8 Native 0.2.1"
+CAPTION "Digital8 Native 0.2.3"
 FONT 9,"Yu Gothic UI"
 BEGIN
     LTEXT "機種",-1,12,12,28,12
@@ -41,8 +41,8 @@ END
 JSON_PIPL JSON "PiPLs.json"
 
 VS_VERSION_INFO VERSIONINFO
-FILEVERSION 0,2,1,0
-PRODUCTVERSION 0,2,1,0
+FILEVERSION 0,2,3,0
+PRODUCTVERSION 0,2,3,0
 FILEFLAGSMASK VS_FFI_FILEFLAGSMASK
 FILEFLAGS 0
 FILEOS VOS_NT_WINDOWS32
@@ -54,9 +54,9 @@ BEGIN
         BLOCK "040904B0"
         BEGIN
             VALUE "FileDescription", "Digital8 Native Photoshop Filter\0"
-            VALUE "FileVersion", "0.2.1\0"
+            VALUE "FileVersion", "0.2.3\0"
             VALUE "ProductName", "Digital8 Native\0"
-            VALUE "ProductVersion", "0.2.1\0"
+            VALUE "ProductVersion", "0.2.3\0"
             VALUE "OriginalFilename", "Digital8.8bf\0"
         END
     END

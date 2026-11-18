@@ -8,7 +8,7 @@
       "SubVersion": 0,
       "ComponentVersionShortNum": 1,
       "ComponentVersionMinorRevNum": 2,
-      "ComponentVersionDotRevNum": 1,
+      "ComponentVersionDotRevNum": 2,
       "ComponentName": "Digital8Native",
       "CodeEntryPointWin64": "PluginMain",
       "SupportedModes": {
@@ -125,6 +125,12 @@
                     "ParamKeyword": "d8st",
                     "ParamType": "TEXT",
                     "ParamDescription": "Versioned Digital8 settings and RGB palette"
+                  },
+                  {
+                    "ParamName": "fillMapRequest",
+                    "ParamKeyword": "d8fm",
+                    "ParamType": "TEXT",
+                    "ParamDescription": "Optional temporary fill map request from the Digital8 panel"
                   }
                 ]
               }

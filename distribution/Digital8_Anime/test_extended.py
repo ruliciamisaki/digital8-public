@@ -152,7 +152,7 @@ class ExportTests(unittest.TestCase):
                     decoded.extend([encoded[i]] * (257 - command)); i += 1
             self.assertEqual(bytes(decoded), row)
 
-    def test_independent_psd_layer_decoder_exact_recomposition(self):
+    def read_psd(self, path):
         # Optional independent reader; installed only in the local test target.
         dependency = converter.ROOT / ".test-deps"
         if importlib.util.find_spec("psd_tools") is None:
@@ -160,10 +160,13 @@ class ExportTests(unittest.TestCase):
                 self.skipTest("Optional psd-tools decoder is not installed")
             sys.path.append(str(dependency))
         from psd_tools import PSDImage
+        return PSDImage.open(path)
+
+    def test_independent_psd_layer_decoder_exact_recomposition(self):
         document = converter.convert_document(self.source, converter.anime_standard())
         output = self.folder / "layers.psd"
         layer_export.write_psd(output, document)
-        loaded = PSDImage.open(output)
+        loaded = self.read_psd(output)
         self.assertEqual(len(loaded), len(document.layer_ids()))
         assert_visible_equal(self, loaded.composite(force=True), document.image)
 
@@ -183,6 +186,61 @@ class ExportTests(unittest.TestCase):
             self.assertGreater(destination.stat().st_size, 50)
             assert_visible_equal(self, result, expected)
 
+    def test_psd_fill_flattens_mixed_tile_only_on_either_machine(self):
+        yellow, blue = (255, 255, 0), (0, 0, 255)
+        pixels = np.full((17, 31, 4), (128, 128, 128, 120), dtype=np.uint8)
+        pixels[:, 16:] = (*yellow, 255)
+        pixels[:3, :, 3] = 0
+        Image.fromarray(pixels, "RGBA").save(self.source)
+        for preset, palette_size in ((converter.pc8801_standard(), 8), (converter.pc9801_standard(), 16)):
+            with self.subTest(machine=preset.machine):
+                options = replace(preset, tall_dots=False, resize_640=False, line_threshold=0, edge_strength=0,
+                                  palette_id="custom", retro_palette=(yellow, blue) * (palette_size // 2))
+                document = converter.convert_document(self.source, options)
+                self.assertEqual(set(document.image.convert("RGB").getdata()), {yellow, blue})
+                output = self.folder / "fill.psd"
+                default = self.folder / "default.psd"
+                converter.convert(self.source, default, options)
+                for extras in (("fill",), ("colour",), ("colour", "fill")):
+                    saved = converter.convert(self.source, output, options, psd_layers=extras)
+                    assert_visible_equal(self, saved, document.image)
+                    with Image.open(output) as merged, Image.open(default) as baseline:
+                        np.testing.assert_array_equal(merged, baseline)
+                    exported = self.read_psd(output)
+                    groups = {layer.name: layer for layer in exported}
+                    expected = {"タイル模様を保持", *(layer_export.PSD_EXTRA_GROUPS[mode] for mode in extras)}
+                    self.assertEqual(set(groups), expected)
+                    self.assertTrue(all(group.is_group() for group in groups.values()))
+                    self.assertEqual([name for name, group in groups.items() if group.visible], ["タイル模様を保持"])
+                    assert_visible_equal(self, exported.composite(force=True), document.image)
+                    for mode in extras:
+                        group = groups[layer_export.PSD_EXTRA_GROUPS[mode]]
+                        groups["タイル模様を保持"].visible = False
+                        group.visible = True
+                        comparison = Image.fromarray(pixels, "RGBA") if mode == "fill" else document.image
+                        assert_visible_equal(self, exported.composite(force=True), comparison)
+                        group.visible = False
+                for extension in ("png", "zip"):
+                    ordinary = converter.convert(self.source, self.folder / f"out.{extension}", options,
+                                                 psd_layers="fill")
+                    assert_visible_equal(self, ordinary, document.image)
+
+    def test_psd_colour_groups_rendered_rgb_and_anime_fill_keeps_lines(self):
+        for settings in (converter.pc8801_standard(), converter.anime_standard()):
+            document = converter.convert_document(self.source, replace(settings, resize_640=False, colour_trace=True))
+            split = document.for_psd_layers("colour")
+            actual = np.asarray(document.image.convert("RGBA"))
+            rgb = {tuple(colour) for colour in actual[actual[:, :, 3] > 0, :3]}
+            expected_names = {f"#{r:02X}{g:02X}{b:02X}" for r, g, b in rgb}
+            self.assertEqual(set(split.names.values()), expected_names)
+            combined = Image.new("RGBA", split.image.size)
+            for index in split.layer_ids():
+                layer, _ = split.layer(index)
+                combined = Image.alpha_composite(combined, layer)
+            assert_visible_equal(self, combined, document.image)
+            if settings.machine == "anime":
+                self.assertIs(document.for_psd_layers("fill"), document)
+
 
 class GuiExtendedTests(unittest.TestCase):
     def test_chart_switches_output_format_and_full_database_editor(self):
@@ -195,9 +253,18 @@ class GuiExtendedTests(unittest.TestCase):
             app.update_palette_swatch()
             self.assertEqual(len(app._settings().anime_palette), 563)
             app.output_path.set("test.png")
+            self.assertTrue(all(checkbox.instate(["disabled"]) for checkbox in app.psd_layer_checkboxes))
             app.output_format.set("PSD")
             app.change_output_format()
             self.assertEqual(app.output_path.get(), "test.psd")
+            self.assertTrue(all(checkbox.instate(["!disabled"]) for checkbox in app.psd_layer_checkboxes))
+            revision = app._preview_revision
+            for checkbox in app.psd_layer_checkboxes:
+                checkbox.invoke()
+            self.assertTrue(all(option.get() for option in app.psd_extra_layers.values()))
+            self.assertEqual(app._preview_revision, revision)
+            app.output_path.set("test.zip")
+            self.assertTrue(all(checkbox.instate(["disabled"]) for checkbox in app.psd_layer_checkboxes))
             app.edit_palette()
             root.update_idletasks()
             self.assertLess(app.palette_canvas.winfo_reqheight(), 100)

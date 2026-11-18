@@ -36,9 +36,16 @@ async function run(ps) {
         await session.update(settings.encode());
         const preview = await pixels();
         if (hasSelection) await session.cancel(); // Exercise Apply without a running preview as well.
-        const count = await session.commit(settings.encode(), true);
-        const group = doc.activeLayers[0], layers = Array.from(group.layers);
+        await session.commit(settings.encode(), { colour: true, fill: true });
+        const group = doc.activeLayers[0], groups = Array.from(group.layers);
         requireTrue(group.kind === ps.constants.LayerKind.GROUP, "Expected a group");
+        const pattern = groups.find(layer => layer.name === "タイル模様を保持");
+        const colour = groups.find(layer => layer.name === "使用色ごと");
+        const fill = groups.find(layer => layer.name === "塗りごと");
+        requireTrue(groups.length === 3 && pattern?.visible && colour && !colour.visible && fill && !fill.visible,
+            "Expected visible patterned output and both hidden alternates");
+        const layers = Array.from(colour.layers);
+        const count = layers.filter(layer => layer.name.startsWith("#")).length;
         requireTrue(doc.layers[1].id === source.id && !source.visible, "Source must be preserved and hidden below the group");
         requireTrue(same(original, await pixels(source.id)), "Original layer pixels changed");
         requireTrue(count > 1 && layers.length === count + Number(hasSelection), "Unexpected number of colour layers: " + layers.map(l => l.name).join(", "));
@@ -55,7 +62,8 @@ async function run(ps) {
         }
         requireTrue(sameVisible(preview, await pixels()), "Group composite differs from preview");
         requireTrue(JSON.stringify(doc.selection.bounds) === selection, "Selection was modified");
-        record("colour-layers-composite", { count, hasSelection, hasMask, original_intact: true, preview_matches: true });
+        record("colour-layers-composite", { count, hasSelection, hasMask, original_intact: true, preview_matches: true,
+            groups: groups.map(layer => layer.name) });
         await write();
         await ps.core.executeAsModal(async () => {
             await ps.action.batchPlay([{ _obj: "select", _target: [{ _ref: "historyState", _enum: "ordinal", _value: "previous" }] }], {});

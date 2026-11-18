@@ -7,10 +7,10 @@ const { PreviewSession, readTarget } = require("./session.js");
 const { canSplitLayer } = require("./colour_layers.js");
 const $ = id => document.getElementById(id);
 let settings = new Settings(), page = 0, colour = 0, busy = false, pendingCancel = false;
-let autoTimer = null, autoTarget = null, panelVisible = true;
+let autoTimer = null, autoTarget = null, panelVisible = true, targetTimer = null, lastTarget = null;
 const autoPreview = $("auto-preview");
-const splitOutput = $("split-output");
-let splitColours = false;
+const splitOutputs = { colour: $("split-output"), fill: $("fill-output") };
+const splitSelected = { colour: false, fill: false };
 const rgbControls = [];
 const pickerListeners = new WeakMap();
 $("version").textContent = "C++ Native · " + require("./manifest.json").version;
@@ -19,6 +19,19 @@ try { const saved = localStorage.getItem("digital8-settings-v1"); if (saved) set
 autoPreview.checked = localStorage.getItem("digital8-auto-preview") === "true";
 function element(tag, parent, text) { const el = document.createElement(tag); if (text !== undefined) el.textContent = text; parent.appendChild(el); return el; }
 function status(message, error = false) { $("status").textContent = message; $("status").classList.toggle("error", error); }
+function reportOperationError(error) {
+    const detail = error?.message || error?.$Msge || (typeof error === "string" && error) || "エラーの詳細が返されませんでした。";
+    const banner = $("operation-error"), message = "Digital8: " + detail;
+    if (banner.textContent !== message) console.error(message);
+    status("");
+    banner.textContent = message;
+    banner.style.display = "block";
+}
+function clearOperationError() {
+    const banner = $("operation-error");
+    banner.style.display = "none";
+    banner.textContent = "";
+}
 function remember() { localStorage.setItem("digital8-settings-v1", settings.encode()); }
 function clearAutoPreview() {
     if (autoTimer !== null) clearTimeout(autoTimer);
@@ -28,20 +41,23 @@ function clearAutoPreview() {
 function selectedTarget() {
     const doc = ps.app.activeDocument;
     if (!doc || doc.activeLayers.length !== 1) return null;
-    return { documentID: doc.id, layerID: doc.activeLayers[0].id };
+    const layer = doc.activeLayers[0], pixel = canSplitLayer(ps, layer);
+    if (ps.constants?.LayerKind && !pixel && layer.kind !== ps.constants.LayerKind.SMARTOBJECT) return null;
+    return { documentID: doc.id, layerID: layer.id, pixel, label: doc.name + " / " + layer.name };
 }
+function sameTarget(a, b) { return a?.documentID === b?.documentID && a?.layerID === b?.layerID; }
 function runAutoPreview() {
     if (!autoTarget || autoTimer !== null || busy || pendingCancel) return;
     const target = selectedTarget();
-    const unchanged = target && target.documentID === autoTarget.documentID && target.layerID === autoTarget.layerID;
+    const unchanged = sameTarget(target, autoTarget);
     clearAutoPreview();
     if (unchanged) void operate("preview");
     else status("文書かレイヤーが変わりました。「プレビュー更新」で選択中のレイヤーに反映します。");
 }
-function scheduleAutoPreview() {
+function scheduleAutoPreview(target = selectedTarget()) {
     clearAutoPreview();
     if (!panelVisible || pendingCancel) return;
-    autoTarget = selectedTarget();
+    autoTarget = target;
     if (!autoTarget) { status("画像レイヤーかスマートオブジェクトを1つ選択してください。"); return; }
     if (!busy) status("設定の変更をプレビューへ反映します…");
     // Coalesce slider events and keep just the most recent edit during a render.
@@ -54,17 +70,23 @@ function dirty() {
 }
 const session = new PreviewSession(ps, (state, error) => {
     if (state === "rendering") status("C++で計算中… Photoshopの進捗表示から中止できます。");
-    if (state === "splitting") status("使用色ごとにレイヤーを作成中…");
-    if (state === "preview") status("メイン画面に表示中。「適用」か「取消」で終了します。");
-    if (state === "error") { clearAutoPreview(); status(error.message, true); }
+    if (state === "splitting") status("追加レイヤーを作成中…");
+    if (state === "preview") { clearOperationError(); status("メイン画面に表示中。「適用」か「取消」で終了します。"); }
+    if (state === "error") { clearAutoPreview(); reportOperationError(error); }
     buttons();
 });
 function setDisabled(el, disabled) { el.disabled = disabled; if (disabled) el.setAttribute("disabled", ""); else el.removeAttribute("disabled"); }
 function syncSplitOutput() {
-    const doc = ps.app && ps.app.activeDocument;
-    const eligible = doc && doc.activeLayers.length === 1 && canSplitLayer(ps, doc.activeLayers[0]);
-    splitOutput.checked = !!eligible && splitColours;
-    setDisabled(splitOutput, !eligible || busy || pendingCancel);
+    const target = selectedTarget(), eligible = !!target?.pixel;
+    const label = target?.label || "画像レイヤーかスマートオブジェクトを選択してください。";
+    if ($("target").textContent !== label) $("target").textContent = label;
+    for (const [mode, box] of Object.entries(splitOutputs)) {
+        const checked = !!eligible && splitSelected[mode];
+        const disabled = !eligible || busy || pendingCancel;
+        if (box.checked !== checked) box.checked = checked;
+        if (box.disabled !== disabled) setDisabled(box, disabled);
+    }
+    return target;
 }
 function buttons() {
     setDisabled($("preview"), busy || pendingCancel); setDisabled($("apply"), busy || pendingCancel);
@@ -193,21 +215,24 @@ async function operate(type) {
     clearAutoPreview();
     // Validate all edited fields before sending a frozen snapshot to native code.
     for (const el of Array.from($("settings").querySelectorAll("sp-textfield"))) if (el.hasAttribute("invalid")) { status("赤く表示した数値を直してください。", true); return; }
+    const target = selectedTarget();
+    if (!target) { status("画像レイヤーかスマートオブジェクトを1つ選択してください。", true); return; }
     const snapshot = settings.encode(); busy = true; buttons();
     try {
-        if (!selectedTarget()) throw new Error("画像レイヤーかスマートオブジェクトを1つ選択してください。");
-        $("target").textContent = ps.app.activeDocument.name + " / " + ps.app.activeDocument.activeLayers[0].name;
         if (type === "commit") {
-            const split = splitOutput.checked;
-            const count = await session.commit(snapshot, split);
-            status(split ? count + "色をレイヤーに分けました。元レイヤーは非表示です。" : "Digital8を適用しました。");
+            const split = target.pixel ? { ...splitSelected } : {};
+            const grouped = await session.commit(snapshot, split);
+            clearOperationError();
+            const added = [split.colour && "「使用色ごと」", split.fill && "「塗りごと」"].filter(Boolean).join("・");
+            status(added ? added + "を非表示で追加しました。レイヤーパネルで目を切り替えて確認できます。" :
+                grouped ? "「タイル模様を保持」グループを作成しました。" : "Digital8を適用しました。");
         } else {
             await session.update(snapshot);
             if (!pendingCancel) status(autoTarget ? "最新の設定をプレビューへ反映します…" :
                 snapshot === settings.encode() ? "メイン画面に表示中。「適用」か「取消」で終了します。" :
                 "計算中に設定が変わりました。もう一度「プレビュー更新」を押してください。");
         }
-    } catch (e) { clearAutoPreview(); if (!pendingCancel) status(e.message, true); }
+    } catch (e) { clearAutoPreview(); if (!pendingCancel) reportOperationError(e); }
     finally {
         if (type === "commit") clearAutoPreview();
         busy = false; buttons(); runAutoPreview();
@@ -218,8 +243,8 @@ async function cancel() {
     if (!session.running) return;
     if (session.closing) return session.completion;
     if (pendingCancel) return; pendingCancel = true; buttons();
-    try { await session.cancel(); status("プレビューを取り消し、元の状態へ戻しました。"); }
-    catch (e) { status(e.message, true); }
+    try { await session.cancel(); clearOperationError(); status("プレビューを取り消し、元の状態へ戻しました。"); }
+    catch (e) { reportOperationError(e); }
     finally { clearAutoPreview(); pendingCancel = false; buttons(); }
 }
 pages.forEach((p, i) => { const tab = element("sp-action-button", $("tabs"), p.title); tab.addEventListener("click", () => { page = i; showPage(); }); });
@@ -262,7 +287,11 @@ autoPreview.addEventListener("change", () => {
         if (!busy) status("「プレビュー更新」で設定を反映します。");
     }
 });
-splitOutput.addEventListener("change", () => { splitColours = splitOutput.checked; });
+for (const [mode, box] of Object.entries(splitOutputs))
+    box.addEventListener("change", () => { splitSelected[mode] = box.checked; });
+$("layer-output").addEventListener("pointerenter", () => {
+    if (!busy && !pendingCancel) syncSplitOutput();
+});
 $("preview").addEventListener("click", () => operate("preview"));
 $("apply").addEventListener("click", () => operate("commit"));
 $("cancel").addEventListener("click", cancel);
@@ -279,12 +308,30 @@ $("read-existing").addEventListener("click", async () => {
     } catch (e) { status(e.message, true); }
     finally { busy = false; buttons(); runAutoPreview(); }
 });
-function hidePanel() { panelVisible = false; return cancel(); }
 const targetEvents = ["select", "open", "close", "make", "delete", "newPlacedLayer", "undo", "redo"];
-const targetChanged = () => { if (panelVisible && !busy) syncSplitOutput(); };
+function targetChanged() {
+    if (!panelVisible || busy || pendingCancel) return;
+    const target = syncSplitOutput();
+    if (sameTarget(target, lastTarget)) return;
+    lastTarget = target;
+    if (target && autoPreview.checked && !session.running) scheduleAutoPreview(target);
+}
+function showPanel() {
+    panelVisible = true;
+    targetChanged();
+    // Photoshop can report an open/close event before activeLayers has changed.
+    if (targetTimer === null) targetTimer = setInterval(targetChanged, 400);
+}
+function hidePanel() {
+    panelVisible = false;
+    lastTarget = null;
+    if (targetTimer !== null) clearInterval(targetTimer);
+    targetTimer = null;
+    return cancel();
+}
 ps.action?.addNotificationListener?.(targetEvents, targetChanged);
 entrypoints.setup({
-    panels: { digital8: { create() {}, show() { panelVisible = true; syncSplitOutput(); }, hide: hidePanel } },
+    panels: { digital8: { create() {}, show: showPanel, hide: hidePanel } },
     plugin: { create() {}, destroy() {
         ps.action?.removeNotificationListener?.(targetEvents, targetChanged);
         return hidePanel();

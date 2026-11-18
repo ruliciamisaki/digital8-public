@@ -24,12 +24,18 @@ struct Settings {
 static_assert(sizeof(Settings)==1924,"Bump the snapshot version when changing the settings layout");
 struct Image { int width = 0, height = 0; std::vector<uint8_t> rgba; };
 struct Hooks { std::function<bool()> cancelled; std::function<void(int)> progress; };
+constexpr uint16_t line_fill_id = 0xffff;
+struct FillStyle { RGB colour; uint8_t mixed; };
+struct FillMap {
+    std::vector<FillStyle> styles;
+    std::vector<uint16_t> ids;
+};
 const std::vector<Palette>& palettes();
 bool observed_pc88(int a,int b);
 Settings defaults(int machine = 2);
 void set_palette(Settings&, int index);
 void validate(const Settings&);
-Image render(const Image&, const Settings&, const Hooks& = {});
+Image render(const Image&, const Settings&, const Hooks& = {}, FillMap* = nullptr);
 std::string encode(const Settings&);
 Settings decode(const std::string&);
 }

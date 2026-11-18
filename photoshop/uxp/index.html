@@ -20,9 +20,16 @@
    </div>
    <div id="footer"><sp-divider></sp-divider>
     <sp-body size="S" id="status">設定を変えたら「プレビュー更新」を押してください。</sp-body>
+    <div id="operation-error" role="alert" style="display:none"></div>
     <sp-checkbox id="auto-preview">プレビューを自動更新する</sp-checkbox>
     <sp-button id="preview" variant="primary">プレビュー更新</sp-button>
-    <sp-checkbox id="split-output" title="画像レイヤーで使用できます">使用色ごとにレイヤーを分ける</sp-checkbox>
+    <div id="layer-output" role="group" aria-label="適用時の追加レイヤー">
+      <sp-detail>適用時の追加レイヤー</sp-detail>
+      <div class="checks">
+        <sp-checkbox id="split-output" title="適用時に使用色ごとにレイヤーを分割して出力します">使用色ごとに分割</sp-checkbox>
+        <sp-checkbox id="fill-output" title="適用時に塗り部分ごとにレイヤーを分割して出力します">塗り部分ごとに分割</sp-checkbox>
+      </div>
+    </div>
     <div class="actions"><sp-button id="apply" variant="cta">適用</sp-button><sp-button id="cancel" variant="secondary">取消</sp-button></div>
     <sp-detail id="hint">調整レイヤーを先に効かせるには、元画像と一緒にスマートオブジェクトの中へ入れてください。</sp-detail>
    </div>
