@@ -4,6 +4,7 @@
 #include <array>
 #include <cmath>
 #include <cstring>
+#include <cstddef>
 #include <limits>
 #include <map>
 #include <numeric>
@@ -93,9 +94,10 @@ std::vector<uint8_t> morphology(const std::vector<uint8_t>& input,int w,int h,in
 }
 std::vector<Recipe> recipes(const Settings& s) {
     std::vector<Recipe> out;
-    auto add=[&](std::vector<std::string> rows,int a,int b,int c,double extra){
+    auto add=[&](std::vector<std::string> rows,int a,int b,int c,double extra,int fourth=0,int fifth=0){
+        const std::array<int,5> mapping{a,b,c,fourth,fifth};
         Recipe r{int(rows[0].size()),int(rows.size()),{}, {},extra};std::vector<int> used;
-        for(auto row:rows)for(char ch:row){int id=ch=='A'?a:ch=='B'?b:c;r.tile.push_back(uint16_t(id));used.push_back(id);
+        for(auto row:rows)for(char ch:row){int id=mapping[ch-'A'];r.tile.push_back(uint16_t(id));used.push_back(id);
             auto v=colour(s.colours[id]);for(int k=0;k<3;k++)r.target[k]+=v[k];}
         for(auto& v:r.target)v/=float(r.tile.size());
         double contrast=0;for(int i:used)for(int j:used){double d=0;auto x=colour(s.colours[i]),y=colour(s.colours[j]);for(int k=0;k<3;k++)d+=(x[k]-y[k])*(x[k]-y[k]);contrast=std::max(contrast,d);}
@@ -121,6 +123,31 @@ std::vector<Recipe> recipes(const Settings& s) {
     if(s.three111)for(int a=0;a<s.colour_count;a++)for(int b=a+1;b<s.colour_count;b++)for(int c=b+1;c<s.colour_count;c++){
         std::array<int,3> ids{a,b,c};std::sort(ids.begin(),ids.end(),order);
         add(s.three111==1?std::vector<std::string>{"CAB"}:std::vector<std::string>{"CAB","ABC","BCA"},ids[0],ids[1],ids[2],120);}
+    if(s.four_colour || s.five_colour){
+        std::vector<int> unique;
+        for(int i=0;i<s.colour_count;i++){
+            if(std::none_of(unique.begin(),unique.end(),[&](int j){return colour(s.colours[i])==colour(s.colours[j]);}))
+                unique.push_back(i);
+        }
+        const auto add_mixtures=[&](auto&& visit,int size,int start,std::array<int,5>& ids,int count)->void{
+            if(count==size){
+                auto ranked=ids;
+                std::sort(ranked.begin(),ranked.begin()+size,order);
+                if(size==4)
+                    add({"ABCB","BCDC"},ranked[3],ranked[0],ranked[1],120,ranked[2]);
+                else
+                    add({"ABCD","DADE","CBAD","DADE"},ranked[2],ranked[1],ranked[3],120,ranked[0],ranked[4]);
+                return;
+            }
+            for(int i=start;i<=int(unique.size())-(size-count);i++){
+                ids[count]=unique[i];
+                visit(visit,size,i+1,ids,count+1);
+            }
+        };
+        std::array<int,5> ids{};
+        if(s.four_colour)add_mixtures(add_mixtures,4,0,ids,0);
+        if(s.five_colour)add_mixtures(add_mixtures,5,0,ids,0);
+    }
     return out;
 }
 }
@@ -148,24 +175,31 @@ void set_palette(Settings& s,int index) {
 }
 void validate(const Settings& s) {
     auto range=[](double x,double a,double b){return std::isfinite(x)&&x>=a&&x<=b;};
-    if(s.magic!=settings_magic||s.version!=1||s.machine<0||s.machine>2||s.colour_count<1||s.colour_count>max_palette
+    if(s.magic!=settings_magic||s.version!=2||s.machine<0||s.machine>2||s.colour_count<1||s.colour_count>max_palette
         ||(s.machine==0&&s.colour_count!=8)||(s.machine==1&&(s.colour_count<14||s.colour_count>16))
         ||!range(s.pixel_size,1,64)||!range(s.threshold,0,120)||!range(s.radius,0,8)||!range(s.min_area,0,4096)
         ||!range(s.max_colours,0,256)||!range(s.groups,2,64)||!range(s.alpha_mode,0,1)||!range(s.alpha_threshold,0,255)
         ||!range(s.tall_dots,0,1)||!range(s.trace,0,1)||!range(s.white_transparent,0,1)
         ||!range(s.half,0,1)||!range(s.quarter,0,1)||!range(s.eighth,0,1)||!range(s.three112,0,3)||!range(s.three111,0,2)
+        ||!range(s.four_colour,0,1)||!range(s.five_colour,0,1)
         ||!range(s.tolerance,0,128)||!range(s.edge,0,1)||!range(s.growth,0,16)||!range(s.trace_strength,.1,.95)
         ||!range(s.brightness,0,10)||!range(s.saturation,0,10)||!range(s.contrast,0,10)||!range(s.red,0,10)||!range(s.green,0,10)||!range(s.blue,0,10))
         throw std::runtime_error("Unsupported or invalid Digital8 settings");
 }
 std::string encode(const Settings& s) {
     validate(s);const auto* p=reinterpret_cast<const uint8_t*>(&s);const char* digits="0123456789abcdef";
-    std::string out="D8N1:";for(size_t i=0;i<sizeof(s);i++){out+=digits[p[i]>>4];out+=digits[p[i]&15];}return out;
+    std::string out="D8N2:";for(size_t i=0;i<sizeof(s);i++){out+=digits[p[i]>>4];out+=digits[p[i]&15];}return out;
 }
 Settings decode(const std::string& text) {
-    if(text.size()!=5+sizeof(Settings)*2||text.substr(0,5)!="D8N1:")throw std::runtime_error("Unsupported Digital8 settings version");
+    static_assert(offsetof(Settings,four_colour)==legacy_settings_size);
+    const bool legacy=text.size()==5+legacy_settings_size*2&&text.compare(0,5,"D8N1:")==0;
+    if(!legacy&&(text.size()!=5+sizeof(Settings)*2||text.compare(0,5,"D8N2:")!=0))
+        throw std::runtime_error("Unsupported Digital8 settings version");
     Settings s{};auto* p=reinterpret_cast<uint8_t*>(&s);auto hex=[](char c){if(c>='0'&&c<='9')return c-'0';if(c>='a'&&c<='f')return c-'a'+10;throw std::runtime_error("Corrupt Digital8 settings");};
-    for(size_t i=0;i<sizeof(s);i++)p[i]=uint8_t(hex(text[5+i*2])*16+hex(text[6+i*2]));validate(s);return s;
+    for(size_t i=0;i<(legacy?legacy_settings_size:sizeof(s));i++)p[i]=uint8_t(hex(text[5+i*2])*16+hex(text[6+i*2]));
+    if(legacy&&s.version==1)s.version=2;
+    else if(legacy)throw std::runtime_error("Unsupported Digital8 settings version");
+    validate(s);return s;
 }
 
 Image render(const Image& input,const Settings& s,const Hooks& hooks,FillMap* fills) {

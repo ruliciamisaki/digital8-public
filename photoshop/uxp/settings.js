@@ -1,12 +1,16 @@
 "use strict";
 const data = require("./native-data.json");
 function bytes(snapshot) {
-    if (!/^D8N1:[0-9a-f]+$/.test(snapshot) || snapshot.length !== 5 + data.size * 2)
+    const legacy = /^D8N1:[0-9a-f]+$/.test(snapshot);
+    const size = legacy ? data.fields.four_colour.offset : data.size;
+    if ((!legacy && !/^D8N2:[0-9a-f]+$/.test(snapshot)) || snapshot.length !== 5 + size * 2)
         throw new Error("Digital8設定データの形式が違います。");
     const result = new Uint8Array(data.size);
-    for (let i = 0; i < result.length; i++) result[i] = parseInt(snapshot.substr(5 + i * 2, 2), 16);
+    for (let i = 0; i < size; i++) result[i] = parseInt(snapshot.substr(5 + i * 2, 2), 16);
     const view = new DataView(result.buffer);
-    if (view.getUint32(0, true) !== 0x44384631 || view.getUint32(4, true) !== 1) throw new Error("未対応の設定バージョンです。");
+    if (view.getUint32(0, true) !== 0x44384631 || view.getUint32(4, true) !== (legacy ? 1 : 2))
+        throw new Error("未対応の設定バージョンです。");
+    view.setUint32(4, 2, true);
     return result;
 }
 class Settings {
@@ -24,7 +28,7 @@ class Settings {
         const p = data.palettes[index];
         if (!p || p.machine !== this.get("machine")) throw new Error("機種とパレットが一致しません。");
         this.set("palette_index", index); this.set("colour_count", p.colours.length);
-        this.bytes.fill(0, data.paletteOffset);
+        this.bytes.fill(0, data.paletteOffset, data.fields.four_colour.offset);
         p.colours.forEach((c, i) => this.colour(i, c));
     }
     colour(index, rgb) {
@@ -36,6 +40,6 @@ class Settings {
         }
         return Array.from(this.bytes.slice(offset, offset + 3));
     }
-    encode() { return "D8N1:" + Array.from(this.bytes, c => c.toString(16).padStart(2, "0")).join(""); }
+    encode() { return "D8N2:" + Array.from(this.bytes, c => c.toString(16).padStart(2, "0")).join(""); }
 }
 module.exports = { Settings, data };

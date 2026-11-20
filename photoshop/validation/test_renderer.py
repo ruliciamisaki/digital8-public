@@ -48,13 +48,46 @@ class RendererTests(unittest.TestCase):
         second, saved_again = self.run_native(rgba, 2, snapshot=saved)
         np.testing.assert_array_equal(first,second)
         self.assertEqual(saved,saved_again)
+        legacy = bytearray.fromhex(saved[5:])[:1924]
+        struct.pack_into('<I', legacy, 4, 1)
+        restored, upgraded = self.run_native(rgba, 2, snapshot='D8N1:' + legacy.hex())
+        np.testing.assert_array_equal(first, restored)
+        self.assertEqual(saved, upgraded)
         raw = bytearray.fromhex(saved[5:])
         palette = np.frombuffer(raw, np.uint8, count=1800, offset=124).reshape(600,3)
         red = np.flatnonzero(np.all(palette == (255,0,0),axis=1))[0]
         palette[red] = (230,0,0)
-        edited, _ = self.run_native(rgba, 2, snapshot='D8N1:'+raw.hex())
+        edited, _ = self.run_native(rgba, 2, snapshot=saved[:5]+raw.hex())
         self.assertTrue(np.any(np.all(edited[...,:3] == (230,0,0),axis=2)))
         self.assertFalse(np.array_equal(edited,first))
+
+    def test_four_and_five_colour_patterns_repeat_at_logical_pixel_scale(self):
+        colours = np.array([[255 * ((i >> bit) & 1) for bit in (1, 2, 0)]
+                            for i in range(8)], dtype=np.uint8)
+        for machine in (0, 1):
+            for option, rows in (('four-colour', ('1767', '7636')),
+                                 ('five-colour', ('3526', '6360', '2536', '6360'))):
+                with self.subTest(machine=machine, option=option):
+                    # The second five-colour assignment has the same average
+                    # and a lower contrast penalty in the full Digital8 palette.
+                    tile = colours[[[int(dot) for dot in row] for row in rows]]
+                    target = np.rint(tile.mean(axis=(0, 1))).astype(np.uint8)
+                    rgba = np.full((16, 8, 4), 255, np.uint8)
+                    rgba[..., :3] = target
+                    palette = 'digital8' if machine == 0 else 'digital8_half'
+                    options = ['--palette', palette, '--tall', 1, '--edge', 0,
+                               '--threshold', 0, '--radius', 0, '--area', 0, '--tolerance', 0]
+                    disabled, _ = self.run_native(rgba, machine, options)
+                    enabled, snapshot = self.run_native(rgba, machine, [*options, '--' + option, 1])
+                    self.assertFalse(np.array_equal(disabled, enabled))
+                    self.assertEqual(len(np.unique(enabled[..., :3].reshape(-1, 3), axis=0)),
+                                     4 if option == 'four-colour' else 5)
+                    np.testing.assert_array_equal(enabled[::2], enabled[1::2])
+                    np.testing.assert_array_equal(enabled[:, :4], enabled[:, 4:])
+                    period = 2 * len(rows)
+                    np.testing.assert_array_equal(enabled[period:], enabled[:-period])
+                    restored, _ = self.run_native(rgba, snapshot=snapshot)
+                    np.testing.assert_array_equal(enabled, restored)
 
     def test_alpha_binary_and_white_transparency(self):
         rgba = np.full((13,21,4),255,np.uint8)

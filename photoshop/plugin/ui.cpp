@@ -67,7 +67,7 @@ void page(HWND d,State& st){
   for(HWND c:{row.label,row.slider,row.edit,row.spin}){ShowWindow(c,on?SW_SHOW:SW_HIDE);EnableWindow(c,enabled);}
  }
  for(int id:{IDC_TALL,IDC_TRACE,IDC_ALPHA,IDC_WHITE}){ShowWindow(GetDlgItem(d,id),st.page==0?SW_SHOW:SW_HIDE);EnableWindow(GetDlgItem(d,id),!st.busy);}
- for(int id:{IDC_HALF,IDC_QUARTER,IDC_EIGHTH,IDC_THREE112,IDC_THREE111,1400,1401,1402,1403,1404}){
+ for(int id:{IDC_HALF,IDC_QUARTER,IDC_EIGHTH,IDC_THREE112,IDC_THREE111,IDC_FOUR_COLOUR,IDC_FIVE_COLOUR,1400,1401,1402,1403,1404}){
   ShowWindow(GetDlgItem(d,id),st.page==2?SW_SHOW:SW_HIDE);EnableWindow(GetDlgItem(d,id),!st.busy&&st.settings.machine!=2);
  }
  for(int id:{IDC_MACHINE,IDC_PALETTE,IDC_EDIT_COLOUR,IDC_PALETTE_GRID,IDC_PREVIEW,IDOK,IDC_PAGE_COMMON,IDC_PAGE_FILL,IDC_PAGE_PATTERN,IDC_PAGE_COLOUR})EnableWindow(GetDlgItem(d,id),!st.busy);
@@ -85,12 +85,17 @@ void fill(HWND d,State& st){const auto& s=st.settings;st.filling=true;
  for(auto p:std::initializer_list<std::pair<int,double>>{{IDC_PIXEL,s.pixel_size},{IDC_THRESHOLD,s.threshold},{IDC_EDGE,s.edge},{IDC_TOLERANCE,s.tolerance},{IDC_RADIUS,s.radius},{IDC_AREA,s.min_area},{IDC_COLOURS,s.max_colours},{IDC_GROUPS,s.groups},{IDC_GROWTH,s.growth},{IDC_TRACE_STRENGTH,s.trace_strength},{IDC_ALPHA_THRESHOLD,s.alpha_threshold},{IDC_BRIGHTNESS,s.brightness},{IDC_SATURATION,s.saturation},{IDC_CONTRAST,s.contrast},{IDC_RED,s.red},{IDC_GREEN,s.green},{IDC_BLUE,s.blue}})number(d,p.first,p.second);
  for(auto p:std::initializer_list<std::pair<int,int>>{{IDC_TALL,s.tall_dots},{IDC_TRACE,s.trace},{IDC_WHITE,s.white_transparent},{IDC_ALPHA,s.alpha_mode}})CheckDlgButton(d,p.first,p.second?BST_CHECKED:BST_UNCHECKED);
  select(d,IDC_HALF,s.half);select(d,IDC_QUARTER,s.quarter);select(d,IDC_EIGHTH,s.eighth);select(d,IDC_THREE112,s.three112);select(d,IDC_THREE111,s.three111);
+ CheckDlgButton(d,IDC_FOUR_COLOUR,s.four_colour?BST_CHECKED:BST_UNCHECKED);
+ CheckDlgButton(d,IDC_FIVE_COLOUR,s.five_colour?BST_CHECKED:BST_UNCHECKED);
  for(auto& row:st.rows)sync_slider(d,row);palette_info(d,st);page(d,st);st.filling=false;
 }
 Settings read(HWND d,const Settings& previous){Settings s=previous;
  s.pixel_size=integer(d,IDC_PIXEL);s.threshold=integer(d,IDC_THRESHOLD);s.radius=integer(d,IDC_RADIUS);s.min_area=integer(d,IDC_AREA);s.max_colours=integer(d,IDC_COLOURS);s.groups=integer(d,IDC_GROUPS);s.alpha_threshold=integer(d,IDC_ALPHA_THRESHOLD);
  s.edge=float(value(d,IDC_EDGE));s.tolerance=float(value(d,IDC_TOLERANCE));s.growth=float(value(d,IDC_GROWTH));s.trace_strength=float(value(d,IDC_TRACE_STRENGTH));s.brightness=float(value(d,IDC_BRIGHTNESS));s.saturation=float(value(d,IDC_SATURATION));s.contrast=float(value(d,IDC_CONTRAST));s.red=float(value(d,IDC_RED));s.green=float(value(d,IDC_GREEN));s.blue=float(value(d,IDC_BLUE));
- s.tall_dots=IsDlgButtonChecked(d,IDC_TALL)==BST_CHECKED;s.trace=IsDlgButtonChecked(d,IDC_TRACE)==BST_CHECKED;s.white_transparent=IsDlgButtonChecked(d,IDC_WHITE)==BST_CHECKED;s.alpha_mode=IsDlgButtonChecked(d,IDC_ALPHA)==BST_CHECKED;s.half=choice(d,IDC_HALF);s.quarter=choice(d,IDC_QUARTER);s.eighth=choice(d,IDC_EIGHTH);s.three112=choice(d,IDC_THREE112);s.three111=choice(d,IDC_THREE111);validate(s);return s;
+ s.tall_dots=IsDlgButtonChecked(d,IDC_TALL)==BST_CHECKED;s.trace=IsDlgButtonChecked(d,IDC_TRACE)==BST_CHECKED;s.white_transparent=IsDlgButtonChecked(d,IDC_WHITE)==BST_CHECKED;s.alpha_mode=IsDlgButtonChecked(d,IDC_ALPHA)==BST_CHECKED;s.half=choice(d,IDC_HALF);s.quarter=choice(d,IDC_QUARTER);s.eighth=choice(d,IDC_EIGHTH);s.three112=choice(d,IDC_THREE112);s.three111=choice(d,IDC_THREE111);
+ s.four_colour=IsDlgButtonChecked(d,IDC_FOUR_COLOUR)==BST_CHECKED;
+ s.five_colour=IsDlgButtonChecked(d,IDC_FIVE_COLOUR)==BST_CHECKED;
+ validate(s);return s;
 }
 void paint_image(HDC dc,RECT rect,const Image& image){
  rectangle(dc,rect,RGB(25,25,25));if(image.rgba.empty())return;

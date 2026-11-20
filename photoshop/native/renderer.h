@@ -1,4 +1,5 @@
 #pragma once
+#include <cstddef>
 #include <cstdint>
 #include <functional>
 #include <string>
@@ -7,11 +8,12 @@
 namespace digital8 {
 constexpr uint32_t settings_magic = 0x44384631;
 constexpr int max_palette = 600;
+constexpr std::size_t legacy_settings_size = 1924;
 struct RGB { uint8_t r, g, b; };
 struct Palette { int machine; const char* id; const char* label; std::vector<RGB> colours; };
 // Fixed-layout, versioned snapshot. No pointers or paths are persisted in PSDs.
 struct Settings {
-    uint32_t magic = settings_magic, version = 1;
+    uint32_t magic = settings_magic, version = 2;
     int32_t machine = 2, palette_index = 0, colour_count = 0;
     int32_t pixel_size = 1, tall_dots = 0, threshold = 58, radius = 3, min_area = 12;
     int32_t max_colours = 24, groups = 48, alpha_mode = 0, alpha_threshold = 128;
@@ -20,8 +22,9 @@ struct Settings {
     float tolerance = 128, edge = 1, growth = 0, trace_strength = .55f;
     float brightness = 1, saturation = 1, contrast = 1, red = 1, green = 1, blue = 1;
     RGB colours[max_palette]{};
+    int32_t four_colour = 0, five_colour = 0;
 };
-static_assert(sizeof(Settings)==1924,"Bump the snapshot version when changing the settings layout");
+static_assert(sizeof(Settings)==1932,"Bump the snapshot version when changing the settings layout");
 struct Image { int width = 0, height = 0; std::vector<uint8_t> rgba; };
 struct Hooks { std::function<bool()> cancelled; std::function<void(int)> progress; };
 constexpr uint16_t line_fill_id = 0xffff;

@@ -16,7 +16,7 @@ void export_panel(const char* path){
     FIELD(machine,"int") FIELD(palette_index,"int") FIELD(colour_count,"int")
     FIELD(pixel_size,"int") FIELD(tall_dots,"int") FIELD(threshold,"int") FIELD(radius,"int") FIELD(min_area,"int")
     FIELD(max_colours,"int") FIELD(groups,"int") FIELD(alpha_mode,"int") FIELD(alpha_threshold,"int")
-    FIELD(half,"int") FIELD(quarter,"int") FIELD(eighth,"int") FIELD(three112,"int") FIELD(three111,"int")
+    FIELD(half,"int") FIELD(quarter,"int") FIELD(eighth,"int") FIELD(three112,"int") FIELD(three111,"int") FIELD(four_colour,"int") FIELD(five_colour,"int")
     FIELD(trace,"int") FIELD(white_transparent,"int") FIELD(tolerance,"float") FIELD(edge,"float") FIELD(growth,"float")
     FIELD(trace_strength,"float") FIELD(brightness,"float") FIELD(saturation,"float") FIELD(contrast,"float")
     FIELD(red,"float") FIELD(green,"float") FIELD(blue,"float")
@@ -40,7 +40,7 @@ int main(int argc,char** argv){try{
         if(key=="--save-settings"){save=arg;continue;}
         if(key=="--palette"){bool found=false;for(size_t j=0;j<digital8::palettes().size();j++)if(digital8::palettes()[j].machine==s.machine&&arg==digital8::palettes()[j].id){digital8::set_palette(s,int(j));found=true;break;}if(!found)throw std::runtime_error("Unknown palette");continue;}
         float v=std::stof(arg);bool found=false;
-        for(auto pair:std::initializer_list<std::pair<const char*,int32_t*>>{{"pixel",&s.pixel_size},{"tall",&s.tall_dots},{"threshold",&s.threshold},{"radius",&s.radius},{"area",&s.min_area},{"colours",&s.max_colours},{"groups",&s.groups},{"alpha",&s.alpha_mode},{"alpha-threshold",&s.alpha_threshold},{"trace",&s.trace},{"white",&s.white_transparent},{"half",&s.half},{"quarter",&s.quarter},{"eighth",&s.eighth},{"three112",&s.three112},{"three111",&s.three111}})
+        for(auto pair:std::initializer_list<std::pair<const char*,int32_t*>>{{"pixel",&s.pixel_size},{"tall",&s.tall_dots},{"threshold",&s.threshold},{"radius",&s.radius},{"area",&s.min_area},{"colours",&s.max_colours},{"groups",&s.groups},{"alpha",&s.alpha_mode},{"alpha-threshold",&s.alpha_threshold},{"trace",&s.trace},{"white",&s.white_transparent},{"half",&s.half},{"quarter",&s.quarter},{"eighth",&s.eighth},{"three112",&s.three112},{"three111",&s.three111},{"four-colour",&s.four_colour},{"five-colour",&s.five_colour}})
             if(key==std::string("--")+pair.first){*pair.second=int(v);found=true;}
         for(auto pair:std::initializer_list<std::pair<const char*,float*>>{{"tolerance",&s.tolerance},{"edge",&s.edge},{"growth",&s.growth},{"trace-strength",&s.trace_strength},{"brightness",&s.brightness},{"saturation",&s.saturation},{"contrast",&s.contrast},{"red",&s.red},{"green",&s.green},{"blue",&s.blue}})
             if(key==std::string("--")+pair.first){*pair.second=v;found=true;}

@@ -194,7 +194,7 @@ void report(FilterRecord& f,const char* message,int16& result){
 // documents, preview calls or simultaneous smart-filter reevaluations.
 extern "C" __declspec(dllexport) void MACPASCAL PluginMain(const int16 selector,FilterRecordPtr record,intptr_t* data,int16* result){
     if(!result)return;*result=noErr;
-    if(selector==filterSelectorAbout){MessageBoxW(nullptr,L"Digital8 Native 0.2.3\nPC-8801 / PC-9801 / アニメ塗り",L"Digital8",MB_OK);return;}
+    if(selector==filterSelectorAbout){MessageBoxW(nullptr,L"Digital8 Native 0.2.4\nPC-8801 / PC-9801 / アニメ塗り",L"Digital8",MB_OK);return;}
     if(!record||!data){*result=filterBadParameters;return;}auto& f=*record;
     try{
         if(selector==filterSelectorFinish){std::unique_ptr<Session> st(reinterpret_cast<Session*>(*data));*data=0;if(st&&st->success)write_descriptor(f,st->settings);clear_rects(f);return;}

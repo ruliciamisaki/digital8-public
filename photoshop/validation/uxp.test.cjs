@@ -38,6 +38,15 @@ test('C++ exported defaults, palette layout and full snapshot roundtrip', () => 
         const p = data.palettes[s.get('palette_index')]; assert.equal(s.get('colour_count'), p.colours.length);
         p.colours.forEach((c, i) => assert.deepEqual(s.colour(i), c));
     }
+    const retro = new Settings(1);
+    const old = Buffer.from(retro.encode().slice(5), 'hex').subarray(0, data.fields.four_colour.offset);
+    old.writeUInt32LE(1, 4);
+    const migrated = new Settings(1, 'D8N1:' + old.toString('hex'));
+    assert.equal(migrated.encode(), retro.encode());
+    retro.set('four_colour', 1); retro.set('five_colour', 1);
+    retro.palette(retro.get('palette_index'));
+    assert.equal(new Settings(1, retro.encode()).get('four_colour'), 1);
+    assert.equal(new Settings(1, retro.encode()).get('five_colour'), 1);
     const s = new Settings(2); s.set('brightness', 1.25); s.set('pixel_size', 3); s.colour(1, [20, 30, 40]);
     const restored = new Settings(2, s.encode()); assert.equal(restored.get('brightness'), 1.25); assert.equal(restored.get('pixel_size'), 3); assert.deepEqual(restored.colour(1), [20, 30, 40]);
     assert.throws(() => s.set('pixel_size', .5)); assert.throws(() => s.colour(1, [-1, 0, 0]));
