@@ -33,6 +33,27 @@ class TileDefinitionTests(unittest.TestCase):
             np.testing.assert_array_equal(rgb[y:y+h,x:x+w],expected)
             np.testing.assert_array_equal(rgb[upper:upper+2*h,x:x+w],np.repeat(expected,2,axis=0))
 
+    def test_four_and_five_colour_example_tiles_and_independent_switches(self):
+        colours = np.array([[255 * ((i >> bit) & 1) for bit in (1, 2, 0)]
+                            for i in range(8)], dtype=np.uint8)
+        examples = {'four_colour': ('1767', '7636'),
+                    'five_colour': ('3426', '6361', '2436', '6361')}
+        for machine in ('pc8801', 'pc9801'):
+            build = (lambda **options: converter.pc88_two_colour.build_recipes(
+                         palette_override=colours, **options)) if machine == 'pc8801' else (
+                         lambda **options: converter.pc98_two_colour.build_recipes(
+                             np.tile(colours, (2, 1)), **options))
+            self.assertTrue(set(examples).isdisjoint(recipe.name for recipe in build()))
+            for field, rows in examples.items():
+                with self.subTest(machine=machine, field=field):
+                    expected = tuple(int(dot) for row in rows for dot in row)
+                    recipes = build(**{field: True})
+                    mixed = [recipe for recipe in recipes if recipe.name in examples]
+                    self.assertEqual({recipe.name for recipe in mixed}, {field})
+                    recipe = next(recipe for recipe in mixed if recipe.tile == expected)
+                    self.assertEqual(recipe.shape, (len(rows), 4))
+                    np.testing.assert_array_equal(recipe.target, colours[list(expected)].mean(axis=0))
+
     def test_counts_shapes_and_three_colour_disable(self):
         for module,palette in ((converter.pc88_two_colour,None),
                                (converter.pc98_two_colour,converter.palette_for('pc9801','palette_14').array())):
@@ -151,13 +172,14 @@ class RetroFillTests(unittest.TestCase):
     def test_old_pngs_get_missing_v4_defaults_and_new_gui_choices_restore(self):
         options=converter.pc8801_standard()
         values=asdict(options)
-        for name in ('eighth_tone','three_112','three_111'):values.pop(name)
+        for name in ('eighth_tone','three_112','three_111','four_colour','five_colour'):values.pop(name)
         recipe={'settings':values,'palette':converter.palette_for('pc8801','digital8').colours}
         self.assertEqual(png_settings.decode_settings(recipe),options)
         root=gui.TkinterDnD.Tk()if gui.HAS_FILE_DROP else gui.tk.Tk();root.withdraw();app=gui.App(root)
         try:
             options=replace(options,resize_640=False,eighth_tone='eighth_staggered',
-                            three_112='three_112_alternate',three_111='three_111_diagonal')
+                            three_112='three_112_alternate',three_111='three_111_diagonal',
+                            four_colour=True, five_colour=True)
             output=self.folder/'new.png';converter.convert(self.source,output,options)
             app.set_input(output)
             self.assertEqual(app._settings(),options)

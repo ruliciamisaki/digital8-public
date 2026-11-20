@@ -71,10 +71,10 @@ class Job:
             self.options = options
         return self.document
 
-    def save(self, values, kind, output, mask=False, invert=False):
+    def save(self, values, kind, output, mask=False, invert=False, psd_layers=()):
         document = self.render(values)
         if kind == "psd":
-            write_psd(output, document)
+            write_psd(output, document, extra_layers=psd_layers)
         elif kind == "zip":
             write_zip(output, document)
         elif kind in ("preview", "png"):

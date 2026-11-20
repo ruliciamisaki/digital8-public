@@ -83,6 +83,8 @@ class App(ttk.Frame):
         self.eighth_label=tk.StringVar(value='従来 4×2')
         self.three_112_label=tk.StringVar(value='使わない')
         self.three_111_label=tk.StringVar(value='使わない')
+        self.four_colour = tk.BooleanVar(value=False)
+        self.five_colour = tk.BooleanVar(value=False)
         self.pixel_size = tk.IntVar(value=1)
         self.line_threshold = tk.IntVar(value=72)
         self.edge_strength = tk.DoubleVar(value=0.0)
@@ -141,7 +143,7 @@ class App(ttk.Frame):
         for variable in source_controls + (
             self.input_path, self.machine_label, self.palette_label,
             self.half_label, self.quarter_label, self.eighth_label, self.three_112_label,
-            self.three_111_label, self.pixel_size, self.line_threshold, self.edge_strength,
+            self.three_111_label, self.four_colour, self.five_colour, self.pixel_size, self.line_threshold, self.edge_strength,
             self.alpha_label, self.alpha_threshold, self.colour_groups, self.anime_tolerance,
             self.anime_radius, self.anime_min_area, self.anime_max_colours,
             self.line_growth, self.colour_trace, self.trace_strength, self.white_transparent,
@@ -245,7 +247,7 @@ class App(ttk.Frame):
         two_colour = ttk.Frame(self.notebook, padding=9)
         self.two_colour_frame = two_colour
         self.anime_frame = ttk.Frame(self.notebook, padding=9)
-        self.notebook.add(two_colour, text="V4 2色パターン式（3色追加可）")
+        self.notebook.add(two_colour, text="V4 タイルパターン式")
         ttk.Label(two_colour, text="1:1 混色").grid(row=0, column=0, sticky="w")
         ttk.Combobox(two_colour, textvariable=self.half_label, values=tuple(HALF_LABELS),
                      state="readonly", width=21).grid(row=0, column=1, sticky="w", padx=6)
@@ -262,8 +264,10 @@ class App(ttk.Frame):
             ttk.Label(two_colour,text=title).grid(row=row,column=column,sticky='w',pady=(5,0))
             ttk.Combobox(two_colour,textvariable=variable,values=tuple(choices),state='readonly',width=22).grid(
                 row=row,column=column+1,sticky='w',padx=6,pady=(5,0))
-        ttk.Label(two_colour,text='3色は種類ごとに無効化できます。配置の寸法は論理ピクセル単位です。').grid(
-            row=3,column=2,columnspan=4,sticky='w')
+        ttk.Checkbutton(two_colour, text='4色 4×2 を使う', variable=self.four_colour).grid(
+            row=4, column=0, columnspan=2, sticky='w', pady=(5, 0))
+        ttk.Checkbutton(two_colour, text='5色 4×4 を使う', variable=self.five_colour).grid(
+            row=4, column=2, columnspan=2, sticky='w', pady=(5, 0))
         self.notebook.add(self.anime_frame, text="アニメ塗り（ベタ塗り）")
         self._spin(self.anime_frame, 0, 0, "使用色数(0=全色)", self.anime_max_colours, 0, 256, 1)
         ttk.Label(self.anime_frame, text="全画面共通の色区分で塗り分けます。").grid(
@@ -331,6 +335,8 @@ class App(ttk.Frame):
         self.eighth_label.set(_label_for(EIGHTH_LABELS,settings.eighth_tone))
         self.three_112_label.set(_label_for(THREE_112_LABELS,settings.three_112))
         self.three_111_label.set(_label_for(THREE_111_LABELS,settings.three_111))
+        self.four_colour.set(settings.four_colour)
+        self.five_colour.set(settings.five_colour)
         self.notebook.select(self.anime_frame if settings.machine == "anime" else self.two_colour_frame)
         self.update_palette_swatch()
         self.refresh_source_preview()
@@ -528,6 +534,7 @@ class App(ttk.Frame):
             smooth_2x=self.smooth_2x.get(),
             eighth_tone=EIGHTH_LABELS[self.eighth_label.get()],
             three_112=THREE_112_LABELS[self.three_112_label.get()],three_111=THREE_111_LABELS[self.three_111_label.get()],
+            four_colour=self.four_colour.get(), five_colour=self.five_colour.get(),
             alpha_threshold=self.alpha_threshold.get(),
             half_tone=HALF_LABELS[self.half_label.get()],
             quarter_tone=QUARTER_LABELS[self.quarter_label.get()], colour_groups=self.colour_groups.get(),

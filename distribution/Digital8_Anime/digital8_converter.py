@@ -137,6 +137,8 @@ class ConversionOptions:
     three_112: str = "none"
     three_111: str = "none"
     retro_palette: tuple[tuple[int, int, int], ...] | None = None
+    four_colour: bool = False
+    five_colour: bool = False
 
 
 def validate_retro_palette(machine: str, colours: object) -> tuple:
@@ -281,6 +283,8 @@ def _retro_reference(pixels, ink, coverage, palette, settings):
         "eighth_tone": settings.eighth_tone,
         "three_112": settings.three_112,
         "three_111": settings.three_111,
+        "four_colour": settings.four_colour,
+        "five_colour": settings.five_colour,
     }
     if settings.machine == "pc8801":
         recipes = pc88_two_colour.build_recipes(palette_override=palette, **patterns)
@@ -304,7 +308,10 @@ def _retro_image(source, settings, reference=None, spatial_scale=1):
     darkest = int(np.argmin(palette.astype(np.float32) @ np.asarray(image_processing.LUMA_WEIGHTS, dtype=np.float32)))
     indices = tile_patterns.render(chosen, ink, recipes, darkest)
     ids = chosen.astype(np.int32)
-    names = {int(index): f"{settings.machine} two_colour recipe {index}" for index in np.unique(ids[~ink])}
+    names = {int(index): f"{settings.machine} {recipes[index].name} recipe {index}"
+             if recipes[index].name in ('four_colour', 'five_colour')
+             else f"{settings.machine} two_colour recipe {index}"
+             for index in np.unique(ids[~ink])}
     ink_id = len(recipes)
     ids[ink] = ink_id
     names[ink_id] = "Lines - colour trace" if settings.colour_trace else "Lines"
@@ -347,7 +354,8 @@ def _validate_options(settings: ConversionOptions) -> None:
                   settings.green_gain, settings.blue_gain, settings.contrast):
         if not 0 <= value <= 10:
             raise ValueError("色補正は0〜10で指定してください。")
-    tile_patterns.validate(settings.eighth_tone, settings.three_112, settings.three_111)
+    tile_patterns.validate(settings.eighth_tone, settings.three_112, settings.three_111,
+                           settings.four_colour, settings.five_colour)
     if (settings.alpha_mode not in image_processing.ALPHA_MODES
             or settings.half_tone not in pc88_two_colour.HALF_TONES
             or settings.quarter_tone not in pc88_two_colour.QUARTER_TONES):
@@ -458,6 +466,8 @@ def main() -> None:
     parser.add_argument('--eighth-tone',choices=tile_patterns.EIGHTH_TONES)
     parser.add_argument('--three-112',choices=tile_patterns.THREE_112)
     parser.add_argument('--three-111',choices=tile_patterns.THREE_111)
+    parser.add_argument('--four-colour', action=argparse.BooleanOptionalAction)
+    parser.add_argument('--five-colour', action=argparse.BooleanOptionalAction)
     parser.add_argument("--colour-groups", type=int)
     parser.add_argument("--pixel-size", type=int)
     parser.add_argument("--line-threshold", type=int)
@@ -489,6 +499,7 @@ def main() -> None:
             "tall_dots": args.tall_dots,
             "half_tone": args.half_tone, "quarter_tone": args.quarter_tone,
             'eighth_tone':args.eighth_tone,'three_112':args.three_112,'three_111':args.three_111,
+            'four_colour':args.four_colour,'five_colour':args.five_colour,
             "colour_groups": args.colour_groups, "pixel_size": args.pixel_size,
             "line_threshold": args.line_threshold, "alpha_mode": args.alpha_mode,
             "alpha_threshold": args.alpha_threshold,

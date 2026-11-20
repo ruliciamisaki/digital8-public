@@ -52,10 +52,11 @@ def build_recipes(
     three_112: str = 'none',
     three_111: str = 'none',
     palette_override: np.ndarray | None = None,
+    *, four_colour: bool = False, five_colour: bool = False,
 ) -> tuple[TileRecipe, ...]:
     if half_tone not in HALF_TONES or quarter_tone not in QUARTER_TONES:
         raise ValueError("invalid half-tone or quarter-tone preference")
-    tile_patterns.validate(eighth_tone,three_112,three_111)
+    tile_patterns.validate(eighth_tone, three_112, three_111, four_colour, five_colour)
     palette = np.asarray(PALETTE if palette_override is None else palette_override, dtype=np.float32)
     if palette.shape != (8, 3) or not np.isfinite(palette).all() or np.any((palette < 0) | (palette > 255)):
         raise ValueError("PC-8801 palette must contain eight RGB colours (0..255)")
@@ -93,4 +94,5 @@ def build_recipes(
                     if a not in (0, 7) and b not in (0, 7) and a ^ b == 7:
                         penalty += 1800.0
                 recipes.append(TileRecipe(name, a, b, tile, (len(rows), len(rows[0])), target, penalty))
-    return tuple(recipes) + tile_patterns.extras(palette,TileRecipe,eighth_tone,three_112,three_111,OBSERVED_PAIRS)
+    return tuple(recipes) + tile_patterns.extras(palette,TileRecipe,eighth_tone,three_112,three_111,OBSERVED_PAIRS,
+                                                 four_colour=four_colour, five_colour=five_colour)

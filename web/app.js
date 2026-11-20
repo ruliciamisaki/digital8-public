@@ -10,8 +10,8 @@ const numericFields = {
     ["trace_strength", "色トレス明度", 0.1, 0.95, 0.05],
   ],
   "retro-numbers": [["colour_groups", "共通色区分数", 2, 64, 1]],
-  "anime-numbers": [
-    ["anime_max_colours", "使用色数（0＝全候補）", 0, 256, 1],
+  "anime-numbers": [["anime_max_colours", "使用色数（0＝全候補）", 0, 256, 1]],
+  "fill-numbers": [
     ["anime_tolerance", "面をまとめる色差", 0, 128, 1],
     ["anime_radius", "周囲をならす半径", 0, 8, 1],
     ["anime_min_area", "小さい面の整理", 0, 4096, 1],
@@ -52,6 +52,7 @@ function updateControls() {
   get("file").disabled = !catalog || !!active;
   get("original").disabled = !!active;
   get("cancel").hidden = !active;
+  get("psd-layers").hidden = get("format").value !== "psd";
   get("invert-mask").disabled = !get("save-mask").checked;
 }
 
@@ -164,7 +165,8 @@ function showSettings(values) {
     button.setAttribute("aria-pressed", String(button.dataset.preset === machine));
   }
   get("retro-settings").hidden = machine === "anime";
-  get("anime-settings").hidden = machine !== "anime";
+  get("retro-numbers").hidden = machine === "anime";
+  get("anime-numbers").hidden = machine !== "anime";
 }
 
 function readSettings() {
@@ -321,6 +323,10 @@ function convert(save) {
   }
   const current = revision;
   const format = get("format").value;
+  const psdLayers = save && format === "psd" ? [
+    ...(get("psd-split-colours").checked ? ["colour"] : []),
+    ...(get("psd-split-fills").checked ? ["fill"] : []),
+  ] : [];
   const mask = get("save-mask").checked;
   const invert = mask && get("invert-mask").checked;
   const file = source.file;
@@ -332,7 +338,7 @@ function convert(save) {
     if (workerFile !== file) await openInWorker(file, token);
     if (token.cancelled) throw new Error("処理を中止しました。");
     status("変換中…");
-    const render = kind => post({ action: "render", kind, values, mask, invert });
+    const render = kind => post({ action: "render", kind, values, mask, invert, psd_layers: psdLayers });
     const { result, data } = await render(save && format === "png" ? "png" : "preview");
     const image = new Blob([data], { type: pngType });
     if (current === revision) {
@@ -427,6 +433,7 @@ async function init() {
     dropzone.classList.remove("dragging");
     openFile(event.dataTransfer.files[0]);
   });
+  get("format").addEventListener("change", updateControls);
   get("save-mask").addEventListener("change", updateControls);
   get("auto-preview").addEventListener("change", schedulePreview);
   get("preview").addEventListener("click", () => convert(false));

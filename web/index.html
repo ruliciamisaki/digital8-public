@@ -58,7 +58,7 @@
           <label class="check"><input data-setting="colour_trace" type="checkbox"> 色トレス</label>
         </details>
         <details id="retro-settings" class="panel" open>
-          <summary>V4 2色パターン</summary>
+          <summary>V4 タイルパターン式</summary>
           <div class="advanced-grid">
             <label>1:1 混色 <select data-setting="half_tone">
               <option value="checker">市松 AB/BA</option><option value="vertical">縦縞 AB</option>
@@ -78,16 +78,19 @@
               <option value="three_111_diagonal">斜め 3×3</option>
             </select></label>
           </div>
-          <div id="retro-numbers" class="advanced-grid"></div>
+          <label class="check"><input data-setting="four_colour" type="checkbox"> 4色 4×2 を使う</label>
+          <label class="check"><input data-setting="five_colour" type="checkbox"> 5色 4×4 を使う</label>
         </details>
-        <details id="anime-settings" class="panel" open hidden>
-          <summary>アニメ塗り</summary>
-          <div id="anime-numbers" class="advanced-grid"></div>
-          <label class="check"><input data-setting="white_transparent" type="checkbox"> 白 (#FFFFFF) を透明にする</label>
+        <details class="panel" open>
+          <summary>面の塗り分け</summary>
+          <div id="fill-numbers" class="advanced-grid"></div>
+          <div id="retro-numbers" class="advanced-grid"></div>
+          <div id="anime-numbers" class="advanced-grid" hidden></div>
         </details>
         <details class="panel">
           <summary>色補正と透明度</summary>
           <div id="colour-numbers" class="advanced-grid"></div>
+          <label class="check"><input data-setting="white_transparent" type="checkbox"> 白 (#FFFFFF) を透明にする</label>
           <label class="field">透明度 <select data-setting="alpha_mode">
             <option value="preserve">そのまま保持</option><option value="binary">二値化</option>
           </select></label>
@@ -102,6 +105,11 @@
           <label class="field">出力形式 <select id="format">
             <option value="png">PNG</option><option value="psd">レイヤー付きPSD</option><option value="zip">レイヤー別PNG（ZIP）</option>
           </select></label>
+          <fieldset id="psd-layers" hidden>
+            <legend>PSDに追加するレイヤー</legend>
+            <label class="check"><input id="psd-split-colours" type="checkbox"> 使用色ごとに分割</label>
+            <label class="check"><input id="psd-split-fills" type="checkbox"> 塗りごとに分割</label>
+          </fieldset>
           <label class="check"><input id="save-mask" type="checkbox"> 透明マスクも保存</label>
           <label class="check"><input id="invert-mask" type="checkbox"> マスクを反転</label>
           <div class="actions"><button id="download" class="secondary" type="button" disabled>変換・保存</button></div>

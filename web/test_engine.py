@@ -1,5 +1,5 @@
 """Check the web adapter against the shared converter and export readers."""
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from pathlib import Path
 import sys
 import tempfile
@@ -48,14 +48,29 @@ class EngineTests(unittest.TestCase):
         self.source.write_bytes(self.original)
         self.job.open(self.source, "test.png", restored["original"])
 
+    def test_retro_controls_roundtrip_with_new_patterns(self):
+        output = self.folder / "retro.png"
+        for machine in ("pc8801", "pc9801"):
+            settings = replace(engine.PRESETS[machine], resize_640=False, anime_radius=2,
+                               anime_min_area=7, anime_tolerance=52, four_colour=True, five_colour=True)
+            with self.subTest(machine=machine):
+                desktop = converter.convert_document(self.job.source, settings)
+                self.job.save(asdict(settings), "png", output)
+                with Image.open(output) as image:
+                    self.assertEqual(image.convert("RGBA").tobytes(), desktop.image.convert("RGBA").tobytes())
+                self.assertEqual(png_settings.decode_settings(png_settings.read_recipe(output)), settings)
+
     def test_layered_exports_and_mask(self):
         options = asdict(engine.PRESETS["anime"])
         for kind in ("psd", "zip", "mask"):
             output = self.folder / kind
-            self.job.save(options, kind, output, invert=True)
+            self.job.save(options, kind, output, invert=True, psd_layers=("colour", "fill"))
             self.assertGreater(output.stat().st_size, 0)
             if kind == "psd":
-                self.assertTrue(output.read_bytes().startswith(b"8BPS"))
+                data = output.read_bytes()
+                self.assertTrue(data.startswith(b"8BPS"))
+                for group in ("使用色ごと", "塗りごと"):
+                    self.assertIn(group.encode("utf-16-be"), data)
             elif kind == "zip":
                 with ZipFile(output) as archive:
                     self.assertIsNone(archive.testzip())

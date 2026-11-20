@@ -56,7 +56,7 @@ def decode_settings(recipe):
     values = recipe.get('settings')
     default = converter.ConversionOptions()
     expected = {field.name for field in fields(default)}
-    added = {'eighth_tone', 'three_112', 'three_111', 'retro_palette'}
+    added = {'eighth_tone', 'three_112', 'three_111', 'four_colour', 'five_colour', 'retro_palette'}
     obsolete = {'method', 'frequent_mode', 'fill_method', 'colour_coherence', 'fill_stability'}
     if (not isinstance(values, dict) or set(values) - expected - obsolete
             or expected - set(values) - added):

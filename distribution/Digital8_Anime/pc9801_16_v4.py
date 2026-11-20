@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""PC-9801 tile recipes, including optional three-colour patterns."""
+"""PC-9801 tile recipes, including optional multicolour patterns."""
 
 from __future__ import annotations
 
@@ -41,12 +41,15 @@ def build_recipes(
     eighth_tone: str = 'eighth',
     three_112: str = 'none',
     three_111: str = 'none',
+    *, four_colour: bool = False, five_colour: bool = False,
 ) -> tuple[TileRecipe, ...]:
     if half_tone not in HALF_TONES or quarter_tone not in QUARTER_TONES:
         raise ValueError("invalid half-tone or quarter-tone preference")
-    tile_patterns.validate(eighth_tone,three_112,three_111)
+    tile_patterns.validate(eighth_tone, three_112, three_111, four_colour, five_colour)
     if palette.ndim != 2 or palette.shape[1] != 3 or len(palette) > 256:
         raise ValueError("palette must be Nx3 RGB")
+    if (four_colour or five_colour) and len(palette) > 16:
+        raise ValueError("four- and five-colour patterns require a PC-9801 palette of up to 16 entries")
     colours = palette.astype(np.float32)
     brightness = colours @ np.asarray((0.2126, 0.7152, 0.0722), dtype=np.float32)
     unique_indices: list[int] = []
@@ -74,4 +77,5 @@ def build_recipes(
                 if name == 'eighth' and eighth_tone != 'eighth':
                     penalty += 500.0
                 recipes.append(TileRecipe(name, a, b, tile, (len(rows), len(rows[0])), target, penalty))
-    return tuple(recipes) + tile_patterns.extras(palette,TileRecipe,eighth_tone,three_112,three_111)
+    return tuple(recipes) + tile_patterns.extras(palette,TileRecipe,eighth_tone,three_112,three_111,
+                                                 four_colour=four_colour, five_colour=five_colour)

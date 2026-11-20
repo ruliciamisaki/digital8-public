@@ -373,18 +373,22 @@ def select_palette(means: np.ndarray, weights: np.ndarray, palette: np.ndarray,
             lab = matching_features(colours[start:start + 2048])
             nearest = np.argmin(matching_costs(lab, targets), axis=1)
             histogram += np.bincount(nearest, weights=masses[start:start + len(lab)], minlength=len(palette))
-    distances = matching_costs(targets, targets)
+    occupied = np.flatnonzero(histogram)
+    weights = histogram[occupied]
+    if not len(occupied):
+        return np.asarray([0 if ink_index is None else ink_index], dtype=np.int32)
+    distances = matching_costs(targets[occupied], targets)
     if ink_index is None:
-        first = int(np.argmin(histogram @ distances))
+        first = int(np.argmin(weights @ distances))
     else:
         first = int(ink_index)
     chosen = [first]
     current = distances[:, first].copy()
     for _ in range(1, maximum):
-        scores = histogram @ np.minimum(current[:, None], distances)
+        scores = weights @ np.minimum(current[:, None], distances)
         scores[chosen] = np.inf
         next_index = int(np.argmin(scores))
-        if np.sum(histogram * current) - scores[next_index] <= 1e-12:
+        if np.sum(weights * current) - scores[next_index] <= 1e-12:
             break
         chosen.append(next_index)
         current = np.minimum(current, distances[:, next_index])
